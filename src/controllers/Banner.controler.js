@@ -1,7 +1,7 @@
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Banner } from "../models/Banner.model.js"; // Assuming you have a Banner model
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 
 const uploadBanner = asyncHandler(async (req, res) => {
   try {
