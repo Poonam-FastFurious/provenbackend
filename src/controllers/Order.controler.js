@@ -50,4 +50,57 @@ const getAllOrders = asyncHandler(async (req, res) => {
   }
 });
 
-export { placeOrder, getAllOrders };
+const updateOrderStatus = asyncHandler(async (req, res) => {
+  try {
+    const orderId = req.body.orderID;
+
+    if (!orderId) {
+      throw new ApiError(400, "Order ID is required");
+    }
+
+    const { status } = req.body;
+
+    if (!status) {
+      throw new ApiError(400, "Status field is required");
+    }
+
+    // Check if the status is one of the allowed values
+    const allowedStatusValues = [
+      "Pending",
+      "Processing",
+      "Shipped",
+      "Delivered",
+      "Cancelled",
+    ];
+    if (!allowedStatusValues.includes(status)) {
+      throw new ApiError(400, "Invalid status value");
+    }
+
+    // Find the order by orderID and update its status
+    const order = await Order.findOneAndUpdate(
+      { orderID: orderId },
+      { status },
+      { new: true } // Return the updated document
+    );
+
+    if (!order) {
+      throw new ApiError(404, "Order not found");
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, order, "Order status updated successfully"));
+  } catch (error) {
+    console.error("Error updating order status:", error);
+    if (error instanceof ApiError) {
+      throw error;
+    } else {
+      throw new ApiError(
+        500,
+        "Something went wrong while updating order status"
+      );
+    }
+  }
+});
+
+export { placeOrder, getAllOrders, updateOrderStatus };
