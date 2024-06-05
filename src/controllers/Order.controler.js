@@ -49,7 +49,29 @@ const getAllOrders = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Something went wrong while fetching orders");
   }
 });
+const getOrderById = async (req, res) => {
+  const { id } = req.params; // Extract the order ID from request parameters
+  console.log("Received order ID:", id);
+  try {
+    // Find the order by ID
+    const order = await Order.findById(id);
+    console.log("Retrieved order:", order);
+    // If order is not found, return an error response
+    if (!order) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
+    }
 
+    // If order is found, return success response with order details
+    return res.status(200).json({ success: true, data: order });
+  } catch (error) {
+    // If any error occurs during retrieval, return an error response
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+};
 const updateOrderStatus = asyncHandler(async (req, res) => {
   try {
     const orderId = req.body.orderID;
@@ -103,4 +125,4 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   }
 });
 
-export { placeOrder, getAllOrders, updateOrderStatus };
+export { placeOrder, getAllOrders, updateOrderStatus, getOrderById };
