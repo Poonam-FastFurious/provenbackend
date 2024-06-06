@@ -263,5 +263,42 @@ const updateAdmin = async (req, res) => {
     return res.status(500).json({ error: "Internal Server Error" });
   }
 };
+const changeAdminPassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
 
-export { loginAdmin, logoutAdmin, getAdminDetails, updateAdmin };
+  if (!req.admin) {
+    throw new ApiError(401, "Unauthorized");
+  }
+
+  try {
+    const admin = await Admin.findById(req.admin._id);
+
+    if (!admin) {
+      throw new ApiError(404, "Admin not found");
+    }
+
+    const isPasswordCorrect = await admin.isPasswordCorrect(oldPassword);
+
+    if (!isPasswordCorrect) {
+      throw new ApiError(400, "Invalid old password");
+    }
+
+    admin.password = newPassword;
+    await admin.save({ validateBeforeSave: false });
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, "Password changed successfully"));
+  } catch (error) {
+    console.log("Error in changing admin password", error);
+    throw new ApiError(500, "Error in changing admin password", error.message);
+  }
+});
+
+export {
+  loginAdmin,
+  logoutAdmin,
+  getAdminDetails,
+  updateAdmin,
+  changeAdminPassword,
+};
