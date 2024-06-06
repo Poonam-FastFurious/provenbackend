@@ -38,8 +38,8 @@ const placeOrder = asyncHandler(async (req, res) => {
 });
 const getAllOrders = asyncHandler(async (req, res) => {
   try {
-    // Fetch all orders from the database and populate customer details
-    const orders = await Order.find().populate("customer");
+    // Fetch all orders from the database
+    const orders = await Order.find();
 
     return res
       .status(200)
