@@ -38,11 +38,8 @@ const placeOrder = asyncHandler(async (req, res) => {
 });
 const getAllOrders = asyncHandler(async (req, res) => {
   try {
-    // Fetch all orders from the database and populate customer details excluding refreshToken and password
-    const orders = await Order.find().populate({
-      path: "customer",
-      select: "-password -refreshToken",
-    });
+    // Fetch all orders from the database and populate customer details
+    const orders = await Order.find().populate("customer");
 
     return res
       .status(200)
