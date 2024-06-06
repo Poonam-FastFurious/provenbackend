@@ -17,7 +17,7 @@ const addProduct = async (req, res) => {
       description,
       oneTimePrice,
       subscriptionPrice,
-      categoryId,
+      categoryName,
       productShortDescription,
       discountPercentage,
       rating,
@@ -33,7 +33,7 @@ const addProduct = async (req, res) => {
         description,
         oneTimePrice,
         subscriptionPrice,
-        categoryId,
+        categoryName,
         productShortDescription,
         discountPercentage,
         rating,
@@ -52,7 +52,7 @@ const addProduct = async (req, res) => {
     }
 
     // Fetch the category by ID
-    const category = await Category.findById(categoryId);
+    const category = await Category.findOne({ title: categoryName });
     if (!category) {
       throw new ApiError(404, "Category not found");
     }
