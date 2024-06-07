@@ -88,52 +88,92 @@ const registerUser = asyncHandler(async (req, res) => {
 });
 
 const loginUser = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+  // Token generation function
+  const generateAccessAndRefereshTokens = async (userId) => {
+    try {
+      const user = await User.findById(userId);
+      const accessToken = user.generateAccessToken();
+      const refreshToken = user.generateRefreshToken();
 
-  if (!email) {
-    throw new ApiError(400, "username or email is required");
-  }
+      user.refreshToken = refreshToken;
+      user.loginTime = new Date();
+      await user.save({ validateBeforeSave: false });
 
-  const user = await User.findOne({ email });
-
-  if (!user) {
-    throw new ApiError(404, "User does not exist");
-  }
-
-  const isPasswordValid = await user.isPasswordCorrect(password);
-
-  if (!isPasswordValid) {
-    throw new ApiError(401, "Invalid user credentials");
-  }
-
-  const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(
-    user._id
-  );
-
-  const loggedInUser = await User.findById(user._id).select(
-    "-password -refreshToken"
-  );
-
-  const options = {
-    httpOnly: true,
-    secure: true,
+      return { accessToken, refreshToken };
+    } catch (error) {
+      throw new ApiError(
+        500,
+        "Something went wrong while generating refresh and access token"
+      );
+    }
   };
 
-  return res
-    .status(200)
-    .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken, options)
-    .json(
-      new ApiResponse(
-        200,
-        {
-          user: loggedInUser,
-          accessToken,
-          refreshToken,
-        },
-        "User logged In Successfully"
-      )
+  try {
+    const { email, username, password } = req.body;
+
+    if (!username && !email) {
+      throw new ApiError(400, "Username or email is required");
+    }
+
+    // Find the user by username or email
+    const user = await User.findOne({ $or: [{ username }, { email }] });
+
+    if (!user) {
+      throw new ApiError(404, "User does not exist");
+    }
+
+    // Validate password
+    const isPasswordValid = await user.isPasswordCorrect(password);
+
+    if (!isPasswordValid) {
+      throw new ApiError(401, "Invalid user credentials");
+    }
+
+    // Generate access and refresh tokens
+    const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(
+      user._id
     );
+
+    // Fetch logged-in user data (excluding password and refreshToken)
+    const loggedInUser = await User.findById(user._id).select(
+      "-password -refreshToken"
+    );
+    user.loginstatus = true;
+    await user.save({ validateBeforeSave: false });
+
+    // Set options for cookies
+    const options = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // Secure only in production
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax", // None for cross-site, Lax for same-site
+      path: "/", // Ensure the path is set
+    };
+
+    // Send response with cookies and logged-in user data
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", refreshToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          { user: loggedInUser, accessToken, refreshToken },
+          "User logged in successfully"
+        )
+      );
+  } catch (error) {
+    console.error("Error during login:", error);
+
+    // Handle specific errors
+    if (error instanceof ApiError) {
+      return res
+        .status(error.statusCode)
+        .json({ success: false, message: error.message });
+    }
+
+    // Handle other unexpected errors
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
