@@ -3,7 +3,10 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 
 const app = express();
-
+app.use((req, res, next) => {
+  res.setHeader('Permissions-Policy', 'xr-spatial-tracking=(self)');
+  next();
+});
 app.use(
   cors({
     origin: process.env.CORS_ORIGIN,
