@@ -5,6 +5,7 @@ import {
   removeFromCart,
 } from "../controllers/Cart.controler.js";
 import { verifyJWT } from "../middlewares/auth.middlwares.js";
+import { adminVerifyJWT } from "../middlewares/adminVerifyJWT.js";
 
 const router = Router();
 router.route("/add").post(adminVerifyJWT,addToCart);
