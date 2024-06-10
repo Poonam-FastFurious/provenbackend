@@ -15,6 +15,7 @@ const addToCart = asyncHandler(async (req, res) => {
     throw new ApiError(401, "User not authenticated");
   }
 
+
   // Check if the product exists
   const product = await Product.findById(productId);
   if (!product) {
