@@ -116,7 +116,9 @@ const loginUser = asyncHandler(async (req, res) => {
 
   const options = {
     httpOnly: true,
-    secure: true,
+     httpOnly: true,
+    secure: process.env.NODE_ENV === 'production', // Only use secure cookies in production
+    sameSite: 'Lax', // Adjust based on your ne
   };
 
   return res
