@@ -28,6 +28,7 @@ import Banner from "./routes/Banner.routes.js";
 import Product from "./routes/Product.routes.js";
 import cart from "./routes/cart.routes.js";
 import Order from "./routes/Order.routes.js";
+import paymentRoutes from "./routes/Payments.routes.js";
 //routes declearetion
 
 app.use("/api/v1/admin", adminrouter);
@@ -40,5 +41,5 @@ app.use("/api/v1/Banner", Banner);
 app.use("/api/v1/Product", Product);
 app.use("/api/v1/cart", cart);
 app.use("/api/v1/order", Order);
-
+app.use("/api/v1/payments", paymentRoutes);
 export { app };
