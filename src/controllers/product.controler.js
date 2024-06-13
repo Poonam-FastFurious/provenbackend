@@ -112,7 +112,7 @@ const addProduct = async (req, res) => {
 };
 
 const deleteProduct = asyncHandler(async (req, res) => {
-  const { id } = req.query; // Assuming the product ID is passed in the URL parameter
+  const { id } = req.query;
 
   // Check if product exists
   const product = await Product.findById(id);

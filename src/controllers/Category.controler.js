@@ -78,7 +78,7 @@ const updateCategory = async (req, res) => {
       throw new ApiError(400, "Request body is missing or empty");
     }
 
-    const categoryId = req.body;
+    const categoryId = req.body.id;
 
     const { title, slug, metaKeywords, metaDescription } = req.body;
 

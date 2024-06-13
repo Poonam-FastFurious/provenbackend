@@ -4,6 +4,7 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import { Order } from "../models/Order.model.js";
 import { Payment } from "../models/Payments.model.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
@@ -110,3 +111,15 @@ export const getPaymentDetails = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// Get all payments
+export const getAllPayments = asyncHandler(async (req, res) => {
+  const payments = await Payment.find()
+    .populate("order")
+    .populate("user", "name email");
+  return res.json({
+    success: true,
+    data: payments,
+    message: "All payments retrieved successfully",
+  });
+});
