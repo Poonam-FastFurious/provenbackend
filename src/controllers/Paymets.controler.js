@@ -12,25 +12,23 @@ const razorpay = new Razorpay({
 
 // Create a new payment
 export const createPayment = async (req, res) => {
-  const { orderId, amount, currency, paymentMethod } = req.body;
+  const { orderId, amount, currency, paymentMethod, userId } = req.body;
 
   try {
-    // Fetch the order
     const order = await Order.findById(orderId);
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
     }
 
-    // Create a Razorpay order
     const razorpayOrder = await razorpay.orders.create({
-      amount: amount * 100, // Amount in paise
+      amount: amount * 100,
       currency,
       payment_capture: 1,
     });
 
-    // Create a new payment document
     const payment = new Payment({
       order: order._id,
+      user: userId,
       paymentID: `PAY-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       razorpayOrderId: razorpayOrder.id,
       amount,
