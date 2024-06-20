@@ -11,7 +11,7 @@ const router = Router();
 router.route("/add").post(
   upload.fields([
     {
-      name: "avatar",
+      name: "image",
       maxCount: 1,
     },
   ]),

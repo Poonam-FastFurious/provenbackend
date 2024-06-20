@@ -2,22 +2,21 @@ import mongoose from "mongoose";
 
 const categorySchema = new mongoose.Schema(
   {
-    title: {
+    categoriesTitle: {
       type: String,
       required: true,
     },
-    slug: {
+    link: {
       type: String,
       required: true,
     },
-    avatar: {
+    image: {
       type: String,
     },
-    metaKeywords: {
+    status: {
       type: String,
-    },
-    metaDescription: {
-      type: String,
+      enum: ["active", "inactive"],
+      default: "active",
     },
   },
   {

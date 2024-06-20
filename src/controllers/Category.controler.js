@@ -13,42 +13,37 @@ const createCategory = async (req, res) => {
       throw new ApiError(400, "Request body is missing or empty");
     }
 
-    const { title, slug, metaKeywords, metaDescription } = req.body;
+    const { categoriesTitle, link, status } = req.body;
 
-    if (
-      ![title, slug, metaKeywords, metaDescription].every((field) =>
-        field?.trim()
-      )
-    ) {
-      throw new ApiError(400, "All fields are required");
+    if (![categoriesTitle, link].every((field) => field?.trim())) {
+      throw new ApiError(400, "Categories title and link are required");
     }
 
     const existingCategory = await Category.findOne({
-      $or: [{ title }, { slug }],
+      $or: [{ categoriesTitle }, { link }],
     });
     if (existingCategory) {
       throw new ApiError(
         409,
-        "Category with the same title or slug already exists"
+        "Category with the same title or link already exists"
       );
     }
 
-    const avatarLocalPath = req.files?.avatar[0].path;
-    if (!avatarLocalPath) {
-      throw new ApiError(400, "Avatar file is required");
-    }
-
-    const avatarImage = await uploadOnCloudinary(avatarLocalPath);
-    if (!avatarImage) {
-      throw new ApiError(400, "Failed to upload avatar image");
+    const imageLocalPath = req.files?.image[0].path;
+    let imageUrl;
+    if (imageLocalPath) {
+      const image = await uploadOnCloudinary(imageLocalPath);
+      if (!image) {
+        throw new ApiError(400, "Failed to upload image");
+      }
+      imageUrl = image.url;
     }
 
     const category = await Category.create({
-      title,
-      slug,
-      metaKeywords,
-      metaDescription,
-      avatar: avatarImage.url,
+      categoriesTitle,
+      link,
+      image: imageUrl,
+      status,
     });
 
     const { _id: _, ...createdCategory } = category.toObject();
