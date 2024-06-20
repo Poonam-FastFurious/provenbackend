@@ -3,7 +3,7 @@ import {
   createCategory,
   deleteCategory,
   getAllCategories,
-  updateCategory,
+  updateCategoryById,
 } from "../controllers/Category.controler.js";
 import { upload } from "../middlewares/FileUpload.middlwares.js";
 
@@ -19,5 +19,5 @@ router.route("/add").post(
 );
 router.route("/delete").delete(deleteCategory);
 router.route("/allcategory").get(getAllCategories);
-router.route("/update").patch(updateCategory);
+router.route("/update").patch(updateCategoryById);
 export default router;

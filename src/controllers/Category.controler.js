@@ -67,52 +67,71 @@ const createCategory = async (req, res) => {
       .json({ success: false, message: "Internal server error" });
   }
 };
-const updateCategory = async (req, res) => {
+const updateCategoryById = async (req, res) => {
   try {
+    const categoryId = req.query.categoryId; // Extract category ID from query parameter
+
+    if (!categoryId) {
+      throw new ApiError(400, "Category ID is missing");
+    }
+
     if (!req.body) {
       throw new ApiError(400, "Request body is missing or empty");
     }
 
-    const categoryId = req.body.id;
+    const { categoriesTitle, link, status } = req.body;
 
-    const { title, slug, metaKeywords, metaDescription } = req.body;
-
-    if (
-      ![title, slug, metaKeywords, metaDescription].every((field) =>
-        field?.trim()
-      )
-    ) {
-      throw new ApiError(400, "All fields are required");
+    if (![categoriesTitle, link].every((field) => field?.trim())) {
+      throw new ApiError(400, "Categories title and link are required");
     }
 
     const existingCategory = await Category.findOne({
-      $and: [{ _id: { $ne: categoryId } }, { $or: [{ title }, { slug }] }],
+      $and: [
+        { _id: { $ne: categoryId } }, // Exclude current category
+        { $or: [{ categoriesTitle }, { link }] },
+      ],
     });
     if (existingCategory) {
       throw new ApiError(
         409,
-        "Category with the same title or slug already exists"
+        "Category with the same title or link already exists"
       );
     }
 
-    const category = await Category.findByIdAndUpdate(
-      categoryId,
+    const imageLocalPath = req.files?.image[0].path;
+    let imageUrl;
+    if (imageLocalPath) {
+      const image = await uploadOnCloudinary(imageLocalPath);
+      if (!image) {
+        throw new ApiError(400, "Failed to upload image");
+      }
+      imageUrl = image.url;
+    }
+
+    const updatedCategory = await Category.findByIdAndUpdate(
+      categoryId, // Use category ID from query parameter
       {
-        title,
-        slug,
-        metaKeywords,
-        metaDescription,
+        categoriesTitle,
+        link,
+        image: imageUrl,
+        status,
       },
       { new: true }
     );
 
-    if (!category) {
+    if (!updatedCategory) {
       throw new ApiError(404, "Category not found");
     }
 
     return res
       .status(200)
-      .json(new ApiResponse(200, category, "Category updated successfully"));
+      .json(
+        new ApiResponse(
+          200,
+          updatedCategory.toObject(),
+          "Category updated successfully"
+        )
+      );
   } catch (error) {
     console.error("Error during category update:", error);
 
@@ -127,6 +146,7 @@ const updateCategory = async (req, res) => {
       .json({ success: false, message: "Internal server error" });
   }
 };
+
 const deleteCategory = asyncHandler(async (req, res) => {
   const { id } = req.query;
 
@@ -155,4 +175,4 @@ const getAllCategories = asyncHandler(async (req, res) => {
   });
 });
 
-export { createCategory, deleteCategory, updateCategory, getAllCategories };
+export { createCategory, deleteCategory, updateCategoryById, getAllCategories };
