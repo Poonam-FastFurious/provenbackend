@@ -13,52 +13,59 @@ const addProduct = async (req, res) => {
     }
 
     const {
-      productTitle,
+      name,
       description,
-      oneTimePrice,
-      subscriptionPrice,
-      categoryName,
-      productShortDescription,
-      discountPercentage,
+      price,
+      discount,
       rating,
-      stock,
-      status,
+      shortDescription,
       visibility,
-      productTags,
+      tags,
+      tax,
+      hasAttributes,
+      attributes,
+      stockQuantity,
+      stockStatus,
+      categoryName,
     } = req.body;
 
+    // Parse JSON strings to objects/arrays
+    const parsedAttributes = attributes ? JSON.parse(attributes) : [];
+    const parsedTags = tags ? JSON.parse(tags) : [];
+
+    // Check required fields
     if (
       ![
-        productTitle,
+        name,
         description,
-        oneTimePrice,
-        subscriptionPrice,
-        categoryName,
-        productShortDescription,
-        discountPercentage,
-        rating,
-        stock,
-        status,
+        price,
+        stockQuantity,
+        stockStatus,
         visibility,
-        productTags,
+        categoryName,
       ].every((field) => field?.trim())
     ) {
-      throw new ApiError(400, "All fields are required");
+      throw new ApiError(400, "All required fields must be filled");
     }
 
-    const existingProduct = await Product.findOne({ productTitle });
+    // Ensure stockQuantity is a number and not a string
+    const parsedStockQuantity = parseInt(stockQuantity, 10);
+    if (isNaN(parsedStockQuantity)) {
+      throw new ApiError(400, "Stock quantity must be a number");
+    }
+
+    const existingProduct = await Product.findOne({ name });
     if (existingProduct) {
-      throw new ApiError(409, "Product with the same title already exists");
+      throw new ApiError(409, "Product with the same name already exists");
     }
 
-    // Fetch the category by ID
-    const category = await Category.findOne({ title: categoryName });
+    const category = await Category.findOne({ categoriesTitle: categoryName });
     if (!category) {
-      throw new ApiError(404, "Category not found");
+      throw new ApiError(404, `Category '${categoryName}' not found`);
     }
 
-    const imageLocalPath = req.files?.image[0]?.path;
-    const thumbnailLocalPath = req.files?.thumbnail[0]?.path;
+    const imageLocalPath = req.files?.image?.[0]?.path;
+    const thumbnailLocalPath = req.files?.thumbnail?.[0]?.path;
 
     if (!imageLocalPath || !thumbnailLocalPath) {
       throw new ApiError(400, "Image and Thumbnail files are required");
@@ -72,29 +79,29 @@ const addProduct = async (req, res) => {
     }
 
     const newProduct = await Product.create({
-      productTitle,
-      image: uploadedImage.url,
-      thumbnail: uploadedThumbnail.url,
+      name,
       description,
-      oneTimePrice,
-      subscriptionPrice,
-      discountPercentage,
+      price,
+      discount,
       rating,
-      stock,
-      category: category.title,
-      status,
+      thumbnail: uploadedThumbnail.url,
       visibility,
-      productTags,
-      productShortDescription,
+      shortDescription,
+      tags: parsedTags,
+      tax,
+      hasAttributes: Boolean(hasAttributes),
+      attributes: Array.isArray(parsedAttributes) ? parsedAttributes : [],
+      stock: {
+        quantity: parsedStockQuantity,
+        status: stockStatus,
+      },
+      category: category.categoriesTitle,
     });
 
     return res.status(201).json({
       success: true,
       message: "Product created successfully",
-      product: {
-        ...newProduct.toObject(), // Convert Mongoose object to plain object
-        category: category.title, // Include category name instead of ID
-      },
+      product: newProduct.toObject(), // Convert Mongoose object to plain object
     });
   } catch (error) {
     console.error("Error during product creation:", error);
@@ -131,15 +138,23 @@ const deleteProduct = asyncHandler(async (req, res) => {
   });
 });
 
-const getAllProducts = asyncHandler(async (req, res) => {
-  // Retrieve all products
-  const products = await Product.find();
-  return res.json({
-    success: true,
-    data: products,
-    message: "All products retrieved successfully",
-  });
-});
+const getAllProducts = async (req, res) => {
+  try {
+    const products = await Product.find().lean(); // Use lean() to get plain JavaScript objects instead of Mongoose documents
+
+    return res.status(200).json({
+      success: true,
+      count: products.length,
+      products: products,
+    });
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch products",
+    });
+  }
+};
 const getSingleProduct = asyncHandler(async (req, res) => {
   const { id } = req.query; // Assuming the product ID is passed in the URL parameter
 

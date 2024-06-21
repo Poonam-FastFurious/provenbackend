@@ -22,6 +22,7 @@ router.route("/add").post(
   ]),
   addProduct
 );
+
 router.route("/delete").delete(deleteProduct);
 router.route("/products").get(getAllProducts);
 router.route("/product").get(getSingleProduct);

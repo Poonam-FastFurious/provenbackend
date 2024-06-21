@@ -1,64 +1,71 @@
 import mongoose from "mongoose";
+const Schema = mongoose.Schema;
 
-const productSchema = new mongoose.Schema({
-  productTitle: {
-    type: String,
-    required: true,
+// Define the Product schema
+const productSchema = new Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+    },
+    description: {
+      type: String,
+      required: true,
+    },
+    price: {
+      type: Number,
+      required: true,
+    },
+    category: {
+      type: String,
+      ref: "Category",
+      required: true,
+    },
+    discount: {
+      type: String,
+    },
+    rating: {
+      type: Number,
+    },
+    thumbnail: String,
+    visibility: {
+      type: String,
+      enum: ["active", "inactive"],
+      default: "active",
+    },
+    shortDescription: String,
+    tags: [String],
+    tax: {
+      type: String,
+    },
+    hasAttributes: {
+      type: Boolean,
+      default: false,
+    },
+    // Array of dynamic attributes
+    attributes: [
+      {
+        attributeName: {
+          type: String,
+        },
+        attributeValue: {
+          type: String,
+        },
+      },
+    ],
+    // Stock information
+    stock: {
+      quantity: {
+        type: Number,
+      },
+      status: {
+        type: String,
+        enum: ["in_stock", "out_of_stock"],
+        default: "in_stock",
+      },
+    },
   },
-  image: {
-    type: String,
-    required: true,
-  },
-  thumbnail: {
-    type: String,
-    required: true,
-  },
-  description: {
-    type: String,
-  },
-  oneTimePrice: {
-    type: Number,
-    required: true,
-  },
-  subscriptionPrice: {
-    type: Number,
-    required: true,
-  },
-  discountPercentage: {
-    type: Number,
-    default: 0,
-  },
-  rating: {
-    type: Number,
-    default: 0,
-  },
-  stock: {
-    type: Number,
-    default: 0,
-  },
-  category: {
-    type: String,
-    ref: "Category",
-    required: true,
-  },
-  status: {
-    type: String,
-    enum: ["active", "inactive"],
-    default: "active",
-  },
-  visibility: {
-    type: String,
-    enum: ["public", "Hidden"],
-    default: "public",
-  },
-  productTags: {
-    type: [String],
-    default: [],
-  },
-  productShortDescription: {
-    type: String,
-  },
-});
+  { timestamps: true }
+);
 
-// Create a model using the schema
 export const Product = mongoose.model("Product", productSchema);
