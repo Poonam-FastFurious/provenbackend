@@ -3,7 +3,8 @@ import {
   createCategory,
   deleteCategory,
   getAllCategories,
-  updateCategoryById,
+  updateCategory,
+
 } from "../controllers/Category.controler.js";
 import { upload } from "../middlewares/FileUpload.middlwares.js";
 
@@ -19,5 +20,13 @@ router.route("/add").post(
 );
 router.route("/delete").delete(deleteCategory);
 router.route("/allcategory").get(getAllCategories);
-router.route("/update").patch(updateCategoryById);
+router.route("/update").patch(
+  upload.fields([
+    {
+      name: "image",
+      maxCount: 1,
+    },
+  ]),
+  updateCategory
+);
 export default router;

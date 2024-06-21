@@ -32,6 +32,11 @@ import paymentRoutes from "./routes/Payments.routes.js";
 import privacy from "./routes/Privacypolicy.routes.js";
 import termscondtion from "./routes/Termscondition.routes.js";
 import blogs from "./routes/Bloge.routes.js";
+import subcategory from "./routes/Subcaegory.routes.js";
+import addon from "./routes/Addon.routes.js";
+import Sliders from "./routes/Slider.routes.js";
+import ReturnPolicy from "./routes/ReturnPolicy.routes.js";
+import faqs from "./routes/Faq.routes.js";
 //routes declearetion
 
 app.use("/api/v1/admin", adminrouter);
@@ -48,4 +53,9 @@ app.use("/api/v1/payments", paymentRoutes);
 app.use("/api/v1/privacy", privacy);
 app.use("/api/v1/terms", termscondtion);
 app.use("/api/v1/blog", blogs);
+app.use("/api/v1/subcategory", subcategory);
+app.use("/api/v1/addons", addon);
+app.use("/api/v1/slider", Sliders);
+app.use("/api/v1/Returnpolicy", ReturnPolicy);
+app.use("/api/v1/faq", faqs);
 export { app };

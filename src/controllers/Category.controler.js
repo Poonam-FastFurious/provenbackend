@@ -67,29 +67,26 @@ const createCategory = async (req, res) => {
       .json({ success: false, message: "Internal server error" });
   }
 };
-const updateCategoryById = async (req, res) => {
+const updateCategory = async (req, res) => {
   try {
-    const categoryId = req.query.categoryId; // Extract category ID from query parameter
-
-    if (!categoryId) {
-      throw new ApiError(400, "Category ID is missing");
+    const { id, categoriesTitle, link, status } = req.body;
+    if (!id) {
+      throw new ApiError(400, "Category ID is required");
     }
 
     if (!req.body) {
       throw new ApiError(400, "Request body is missing or empty");
     }
 
-    const { categoriesTitle, link, status } = req.body;
+    const updateFields = {};
+    if (categoriesTitle?.trim()) updateFields.categoriesTitle = categoriesTitle;
+    if (link?.trim()) updateFields.link = link;
+    if (status?.trim()) updateFields.status = status;
 
-    if (![categoriesTitle, link].every((field) => field?.trim())) {
-      throw new ApiError(400, "Categories title and link are required");
-    }
-
+    // Check for existing category with the same title or link (excluding the current category)
     const existingCategory = await Category.findOne({
-      $and: [
-        { _id: { $ne: categoryId } }, // Exclude current category
-        { $or: [{ categoriesTitle }, { link }] },
-      ],
+      $or: [{ categoriesTitle }, { link }],
+      _id: { $ne: id },
     });
     if (existingCategory) {
       throw new ApiError(
@@ -98,39 +95,31 @@ const updateCategoryById = async (req, res) => {
       );
     }
 
-    const imageLocalPath = req.files?.image[0].path;
-    let imageUrl;
+    const imageLocalPath = req.files?.image?.[0]?.path;
     if (imageLocalPath) {
       const image = await uploadOnCloudinary(imageLocalPath);
       if (!image) {
         throw new ApiError(400, "Failed to upload image");
       }
-      imageUrl = image.url;
+      updateFields.image = image.url;
     }
 
     const updatedCategory = await Category.findByIdAndUpdate(
-      categoryId, // Use category ID from query parameter
-      {
-        categoriesTitle,
-        link,
-        image: imageUrl,
-        status,
-      },
-      { new: true }
+      id,
+      { $set: updateFields },
+      { new: true, runValidators: true }
     );
 
     if (!updatedCategory) {
       throw new ApiError(404, "Category not found");
     }
 
+    const { _id, __v, ...updatedCategoryResponse } = updatedCategory.toObject();
+
     return res
       .status(200)
       .json(
-        new ApiResponse(
-          200,
-          updatedCategory.toObject(),
-          "Category updated successfully"
-        )
+        new ApiResponse(200, updatedCategoryResponse, "Category updated successfully")
       );
   } catch (error) {
     console.error("Error during category update:", error);
@@ -175,4 +164,4 @@ const getAllCategories = asyncHandler(async (req, res) => {
   });
 });
 
-export { createCategory, deleteCategory, updateCategoryById, getAllCategories };
+export { createCategory, deleteCategory, updateCategory, getAllCategories };
