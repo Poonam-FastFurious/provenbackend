@@ -37,6 +37,7 @@ import addon from "./routes/Addon.routes.js";
 import Sliders from "./routes/Slider.routes.js";
 import ReturnPolicy from "./routes/ReturnPolicy.routes.js";
 import faqs from "./routes/Faq.routes.js";
+import testimonials from "./routes/Testimonial.routes.js";
 //routes declearetion
 
 app.use("/api/v1/admin", adminrouter);
@@ -58,4 +59,5 @@ app.use("/api/v1/addons", addon);
 app.use("/api/v1/slider", Sliders);
 app.use("/api/v1/Returnpolicy", ReturnPolicy);
 app.use("/api/v1/faq", faqs);
+app.use("/api/v1/testimonial", testimonials);
 export { app };
