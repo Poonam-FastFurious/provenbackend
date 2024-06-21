@@ -160,7 +160,7 @@ const logoutAdmin = async (req, res) => {
 const getAdminDetails = async (req, res) => {
   connectDB();
   try {
-    const adminId = req.query.adminId; // Extract adminId from query params
+    const adminId = req.body.adminId; // Extract adminId from query params
     if (!adminId) {
       throw new ApiError(400, "Admin ID is required in query params");
     }

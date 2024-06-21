@@ -1,6 +1,10 @@
 import { Router } from "express";
 import { upload } from "../middlewares/FileUpload.middlwares.js";
-import { createTestimonial } from "../controllers/Testimonial.controler.js";
+import {
+  createTestimonial,
+  deleteTestimonial,
+  getAllTestimonials,
+} from "../controllers/Testimonial.controler.js";
 
 const router = Router();
 router.route("/add").post(
@@ -12,5 +16,7 @@ router.route("/add").post(
   ]),
   createTestimonial
 );
+router.route("/alltestimonial").get(getAllTestimonials);
+router.route("/delete").delete(deleteTestimonial);
 
 export default router;
