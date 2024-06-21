@@ -4,7 +4,6 @@ import {
   deleteCategory,
   getAllCategories,
   updateCategory,
-
 } from "../controllers/Category.controler.js";
 import { upload } from "../middlewares/FileUpload.middlwares.js";
 
