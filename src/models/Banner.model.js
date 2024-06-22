@@ -17,6 +17,14 @@ const bannerSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  type: {
+    type: Number,
+    required: true,
+  },
+  status: {
+    type: String,
+    required: true,
+  },
 });
 
 export const Banner = mongoose.model("Banner", bannerSchema);

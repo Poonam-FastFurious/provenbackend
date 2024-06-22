@@ -9,9 +9,9 @@ const uploadBanner = asyncHandler(async (req, res) => {
       throw new ApiError(400, "Request body is missing or empty");
     }
 
-    const { title, details, link } = req.body;
+    const { title, details, link, type, status } = req.body;
 
-    if (![title, details, link].every((field) => field?.trim())) {
+    if (![title, details, link, status].every((field) => field?.trim())) {
       throw new ApiError("All fields are required");
     }
 
@@ -30,6 +30,8 @@ const uploadBanner = asyncHandler(async (req, res) => {
       title,
       details,
       link,
+      type,
+      status
     });
 
     return res.status(201).json({
@@ -49,7 +51,7 @@ const uploadBanner = asyncHandler(async (req, res) => {
 const editBanner = asyncHandler(async (req, res) => {
   try {
     const { id } = req.body;
-    const { title, details, link } = req.body;
+    const { title, details, link, type, status } = req.body;
 
     // Find the banner by id
     const banner = await Banner.findById(id);
@@ -63,6 +65,7 @@ const editBanner = asyncHandler(async (req, res) => {
     if (title) banner.title = title;
     if (details) banner.details = details;
     if (link) banner.link = link;
+    if (status) banner.status = status;
 
     // If image is being updated
     if (req.files && req.files.image) {
@@ -120,7 +123,8 @@ const deleteBanner = asyncHandler(async (req, res) => {
 });
 
 const getallbanner = asyncHandler(async (req, res) => {
-  const banner = await Banner.find();
+  const { type } = req.query;
+  const banner = await Banner.find({type:type});
 
   return res.json({
     success: true,

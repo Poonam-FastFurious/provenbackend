@@ -6,7 +6,7 @@ import {
     deleteNotification,
     getAllNotification,
     getNotification
-} from "../controllers/Notification.controller.js";
+} from "../controllers/Notification.controler.js";
 
 const router = Router();
 
