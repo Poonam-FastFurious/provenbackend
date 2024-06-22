@@ -85,6 +85,7 @@ const addProduct = async (req, res) => {
       discount,
       rating,
       thumbnail: uploadedThumbnail.url,
+      image: uploadedImage.url,
       visibility,
       shortDescription,
       tags: parsedTags,
@@ -119,7 +120,7 @@ const addProduct = async (req, res) => {
 };
 
 const deleteProduct = asyncHandler(async (req, res) => {
-  const { id } = req.query;
+  const { id } = req.body;
 
   // Check if product exists
   const product = await Product.findById(id);

@@ -28,6 +28,7 @@ const productSchema = new Schema(
       type: Number,
     },
     thumbnail: String,
+    image: String,
     visibility: {
       type: String,
       enum: ["active", "inactive"],
