@@ -33,21 +33,30 @@ export const createAddon = asyncHandler(async (req, res) => {
 
 
 export const updateAddon = asyncHandler(async (req, res) => {
-      const { id } = req.params;
-      const { name, price, status } = req.body;
+      const { id, name, price, status } = req.body;
 
-      const addon = await Addon.findByIdAndUpdate(id, { name, price, status }, { new: true });
+      try {
+            const addon = await Addon.findByIdAndUpdate(
+                  id,
+                  { name, price, status },
+                  { new: true, runValidators: true } // Added runValidators to ensure validation is applied
+            );
 
-      if (!addon) {
-            throw new ApiError(404, "Addon not found");
+            if (!addon) {
+                  return res.status(404).json(new ApiResponse(404, null, "Addon not found"));
+            }
+
+            return res.status(200).json(new ApiResponse(200, addon, "Addon updated successfully"));
+      } catch (error) {
+            console.error("Failed to update addon:", error);
+            return res.status(500).json(new ApiResponse(500, null, "Failed to update addon"));
       }
-
-      return res.json(new ApiResponse(200, addon, "Addon updated successfully"));
 });
+
 
 // Controller function to delete an existing addon
 export const deleteAddon = asyncHandler(async (req, res) => {
-      const { id } = req.params;
+      const { id } = req.body;
 
       const addon = await Addon.findByIdAndDelete(id);
 
