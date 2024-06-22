@@ -1,9 +1,11 @@
 import { Router } from "express";
-import { createAddon, getAllAddon } from "../controllers/addon.controler.js";
+import { createAddon, deleteAddon, getAllAddon, updateAddon } from "../controllers/addon.controler.js";
 
 const router = Router();
 
 
 router.route("/alladdons").get(getAllAddon);
 router.route("/add").post(createAddon);
+router.route("/delete").delete(deleteAddon);
+router.route("/update").patch(updateAddon);
 export default router;

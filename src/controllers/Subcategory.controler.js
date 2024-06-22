@@ -79,7 +79,7 @@ export const getAllSubCategories = async (req, res) => {
 
 export const updateSubCategory = async (req, res) => {
       try {
-            const { id, subCategoryTitle, link, status, categoryName } = req.body;
+            const { id, subCategoryTitle, link, status, } = req.body;
 
             if (!id) {
                   throw new ApiError(400, "Subcategory ID is required");
@@ -92,16 +92,13 @@ export const updateSubCategory = async (req, res) => {
             }
 
             // Find the category by name
-            const existingCategory = await Category.findOne({ categoriesTitle: categoryName });
-            if (!existingCategory) {
-                  throw new ApiError(404, "Category not found");
-            }
+
 
             // Update fields if they are provided
             if (subCategoryTitle) subCategory.subCategoryTitle = subCategoryTitle;
             if (link) subCategory.link = link;
             if (status) subCategory.status = status;
-            if (existingCategory) subCategory.category = existingCategory._id;
+
 
             // Handle image upload if provided
             if (req.files && req.files.image) {
@@ -117,10 +114,10 @@ export const updateSubCategory = async (req, res) => {
             await subCategory.save();
 
             // Fetch the category name for response
-            const categoryNameResponse = existingCategory.categoriesTitle;
+
 
             return res.status(200).json(
-                  new ApiResponse(200, { ...subCategory.toObject(), category: { categoriesTitle: categoryNameResponse } }, "Subcategory updated successfully")
+                  new ApiResponse(200, { ...subCategory.toObject(), }, "Subcategory updated successfully")
             );
       } catch (error) {
             console.error("Error during subcategory update:", error);
