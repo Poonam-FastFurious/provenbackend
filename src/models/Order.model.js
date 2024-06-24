@@ -47,30 +47,24 @@ const orderSchema = new mongoose.Schema(
       },
       city: {
         type: String,
-        required: true,
       },
       state: {
         type: String,
-        required: true,
       },
       postalCode: {
         type: String,
-        required: true,
       },
       country: {
         type: String,
-        required: true,
       },
       phoneNumber: {
         type: String,
-        required: true,
       },
     },
     paymentInfo: {
       method: {
         type: String,
         enum: ["Credit Card", "PayPal", "Bank Transfer", "COD"],
-        required: true,
       },
       status: {
         type: String,
