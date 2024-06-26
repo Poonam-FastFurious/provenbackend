@@ -41,6 +41,7 @@ import testimonials from "./routes/Testimonial.routes.js";
 import Employee from "./routes/Employee.routes.js";
 import Notification from "./routes/Notification.routes.js";
 import EmployeeRole from "./routes/EmployeeRole.routes.js";
+import wishlist from "./routes/Wishlist.routes.js";
 //routes declearetion
 
 app.use("/api/v1/admin", adminrouter);
@@ -66,4 +67,5 @@ app.use("/api/v1/testimonial", testimonials);
 app.use("/api/v1/Employee", Employee);
 app.use("/api/v1/Notification", Notification);
 app.use("/api/v1/EmployeeRole", EmployeeRole);
+app.use("/api/v1/wishlist", wishlist);
 export { app };
