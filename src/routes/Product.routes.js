@@ -17,7 +17,7 @@ router.route("/add").post(
     },
     {
       name: "thumbnail",
-      maxCount: 1,
+      maxCount: 10,
     },
   ]),
   addProduct
@@ -34,7 +34,7 @@ router.route("/update").patch(
     },
     {
       name: "thumbnail",
-      maxCount: 1,
+      maxCount: 10,
     },
   ]),
   updateProduct
