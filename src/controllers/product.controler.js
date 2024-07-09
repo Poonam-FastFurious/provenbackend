@@ -65,17 +65,20 @@ const addProduct = async (req, res) => {
     }
 
     const imageLocalPath = req.files?.image?.[0]?.path;
-    const thumbnailLocalPath = req.files?.thumbnail?.[0]?.path;
+    const thumbnailFiles = req.files?.thumbnail;
 
-    if (!imageLocalPath || !thumbnailLocalPath) {
+    if (!imageLocalPath || !thumbnailFiles) {
       throw new ApiError(400, "Image and Thumbnail files are required");
     }
 
     const uploadedImage = await uploadOnCloudinary(imageLocalPath);
-    const uploadedThumbnail = await uploadOnCloudinary(thumbnailLocalPath);
 
-    if (!uploadedImage || !uploadedThumbnail) {
-      throw new ApiError(400, "Failed to upload image or thumbnail");
+    const uploadedThumbnails = await Promise.all(
+      thumbnailFiles.map((file) => uploadOnCloudinary(file.path))
+    );
+
+    if (!uploadedImage || !uploadedThumbnails) {
+      throw new ApiError(400, "Failed to upload image or thumbnails");
     }
 
     const newProduct = await Product.create({
@@ -84,7 +87,7 @@ const addProduct = async (req, res) => {
       price,
       discount,
       rating,
-      thumbnail: uploadedThumbnail.url,
+      thumbnail: uploadedThumbnails.map((file) => file.url),
       image: uploadedImage.url,
       visibility,
       shortDescription,

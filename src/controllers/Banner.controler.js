@@ -31,7 +31,7 @@ const uploadBanner = asyncHandler(async (req, res) => {
       details,
       link,
       type,
-      status
+      status,
     });
 
     return res.status(201).json({
@@ -124,7 +124,7 @@ const deleteBanner = asyncHandler(async (req, res) => {
 
 const getallbanner = asyncHandler(async (req, res) => {
   const { type } = req.query;
-  const banner = await Banner.find({type:type});
+  const banner = await Banner.find({ type: type });
 
   return res.json({
     success: true,

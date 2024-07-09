@@ -27,7 +27,7 @@ const productSchema = new Schema(
     rating: {
       type: Number,
     },
-    thumbnail: String,
+    thumbnail: [String],
     image: String,
     visibility: {
       type: String,
