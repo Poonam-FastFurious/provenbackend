@@ -179,84 +179,126 @@ const getSingleProduct = asyncHandler(async (req, res) => {
     message: "Product retrieved successfully",
   });
 });
-const updateProduct = asyncHandler(async (req, res) => {
-  const {
-    id,
-    productTitle,
-    description,
-    oneTimePrice,
-    subscriptionPrice,
-    categoryId,
-    productShortDescription,
-    discountPercentage,
-    rating,
-    stock,
-    status,
-    visibility,
-    productTags,
-  } = req.body;
-
-  // Check if ID is provided
-  if (!id) {
-    throw new ApiError(400, "Product ID is required");
-  }
-
-  const updateFields = {};
-
-  // List of fields to update
-  const fieldsToUpdate = [
-    "productTitle",
-    "description",
-    "oneTimePrice",
-    "subscriptionPrice",
-    "categoryId",
-    "productShortDescription",
-    "discountPercentage",
-    "rating",
-    "stock",
-    "status",
-    "visibility",
-    "productTags",
-  ];
-
-  // Iterate over fields and add to updateFields if provided
-  fieldsToUpdate.forEach((field) => {
-    if (req.body[field]) {
-      updateFields[field] = req.body[field];
-    }
-  });
-
-  // If images are being updated
-  const imageLocalPath = req.files?.image?.[0]?.path;
-  const thumbnailLocalPath = req.files?.thumbnail?.[0]?.path;
-
-  if (imageLocalPath && thumbnailLocalPath) {
-    const uploadedImage = await uploadOnCloudinary(imageLocalPath);
-    const uploadedThumbnail = await uploadOnCloudinary(thumbnailLocalPath);
-
-    if (!uploadedImage || !uploadedThumbnail) {
-      throw new ApiError(400, "Failed to upload image or thumbnail");
+const updateProduct = async (req, res) => {
+  try {
+    if (!req.body) {
+      throw new ApiError(400, "Request body is missing or empty");
     }
 
-    updateFields.image = uploadedImage.url;
-    updateFields.thumbnail = uploadedThumbnail.url;
+    const {
+      id,
+      name,
+      description,
+      price,
+      discount,
+      rating,
+      shortDescription,
+      visibility,
+      tags,
+      tax,
+      hasAttributes,
+      attributes,
+      stockQuantity,
+      stockStatus,
+      categoryName,
+      sku,
+    } = req.body;
+
+    // Parse JSON strings to objects/arrays
+    const parsedAttributes = attributes ? JSON.parse(attributes) : [];
+    const parsedTags = tags ? JSON.parse(tags) : [];
+
+    // Check required fields
+    if (!id) {
+      throw new ApiError(400, "Product ID is required");
+    }
+
+    const product = await Product.findById(id);
+    if (!product) {
+      throw new ApiError(404, "Product not found");
+    }
+
+    // Ensure stockQuantity is a number and not a string
+    const parsedStockQuantity = stockQuantity
+      ? parseInt(stockQuantity, 10)
+      : product.stock.quantity;
+    if (isNaN(parsedStockQuantity)) {
+      throw new ApiError(400, "Stock quantity must be a number");
+    }
+
+    if (categoryName) {
+      const category = await Category.findOne({
+        categoriesTitle: categoryName,
+      });
+      if (!category) {
+        throw new ApiError(404, `Category '${categoryName}' not found`);
+      }
+      product.category = category.categoriesTitle;
+    }
+
+    // Update product fields
+    product.name = name || product.name;
+    product.description = description || product.description;
+    product.price = price || product.price;
+    product.discount = discount || product.discount;
+    product.rating = rating || product.rating;
+    product.shortDescription = shortDescription || product.shortDescription;
+    product.visibility = visibility || product.visibility;
+    product.tags = parsedTags.length ? parsedTags : product.tags;
+    product.tax = tax || product.tax;
+    product.hasAttributes =
+      hasAttributes !== undefined
+        ? Boolean(hasAttributes)
+        : product.hasAttributes;
+    product.attributes = parsedAttributes.length
+      ? parsedAttributes
+      : product.attributes;
+    product.stock.quantity = parsedStockQuantity;
+    product.stock.status = stockStatus || product.stock.status;
+    product.sku = sku || product.sku;
+
+    const imageLocalPath = req.files?.image?.[0]?.path;
+    const thumbnailFiles = req.files?.thumbnail;
+
+    if (imageLocalPath) {
+      const uploadedImage = await uploadOnCloudinary(imageLocalPath);
+      if (!uploadedImage) {
+        throw new ApiError(400, "Failed to upload image");
+      }
+      product.image = uploadedImage.url;
+    }
+
+    if (thumbnailFiles) {
+      const uploadedThumbnails = await Promise.all(
+        thumbnailFiles.map((file) => uploadOnCloudinary(file.path))
+      );
+      if (!uploadedThumbnails) {
+        throw new ApiError(400, "Failed to upload thumbnails");
+      }
+      product.thumbnail = uploadedThumbnails.map((file) => file.url);
+    }
+
+    await product.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Product updated successfully",
+      product: product.toObject(), // Convert Mongoose object to plain object
+    });
+  } catch (error) {
+    console.error("Error during product update:", error);
+
+    if (error instanceof ApiError) {
+      return res
+        .status(error.statusCode)
+        .json({ success: false, message: error.message });
+    }
+
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
   }
-
-  // Find and update the product
-  const updatedProduct = await Product.findByIdAndUpdate(
-    id,
-    { $set: updateFields },
-    { new: true }
-  );
-
-  if (!updatedProduct) {
-    throw new ApiError(404, "Product not found");
-  }
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, updatedProduct, "Product updated successfully"));
-});
+};
 
 export {
   addProduct,

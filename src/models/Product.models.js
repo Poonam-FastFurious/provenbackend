@@ -67,7 +67,9 @@ const productSchema = new Schema(
     },
     sku: {
       type: String,
-      required: true,
+      required: function () {
+        return this.isNew; // SKU is required only when the document is new
+      },
     },
   },
   { timestamps: true }
