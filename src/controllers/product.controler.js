@@ -27,6 +27,7 @@ const addProduct = async (req, res) => {
       stockQuantity,
       stockStatus,
       categoryName,
+      sku,
     } = req.body;
 
     // Parse JSON strings to objects/arrays
@@ -43,6 +44,7 @@ const addProduct = async (req, res) => {
         stockStatus,
         visibility,
         categoryName,
+        sku,
       ].every((field) => field?.trim())
     ) {
       throw new ApiError(400, "All required fields must be filled");
@@ -100,6 +102,7 @@ const addProduct = async (req, res) => {
         status: stockStatus,
       },
       category: category.categoriesTitle,
+      sku,
     });
 
     return res.status(201).json({

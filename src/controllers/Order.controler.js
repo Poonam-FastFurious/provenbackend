@@ -2,6 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { Order } from "../models/Order.model.js"; // Assuming this is the correct path to your Order model
+import { User } from "../models/User.model.js";
 
 const placeOrder = asyncHandler(async (req, res) => {
   const { customerId, products, totalAmount, shippingInfo, paymentInfo } =
@@ -19,9 +20,15 @@ const placeOrder = asyncHandler(async (req, res) => {
   }
 
   try {
+    const customer = await User.findById(customerId);
+    if (!customer) {
+      throw new ApiError(404, "Customer not found");
+    }
     // Create the order
     const order = await Order.create({
       customer: customerId,
+      customerName: customer.name,
+      customerEmail: customer.email,
       products,
       totalAmount,
       shippingInfo,
@@ -38,8 +45,8 @@ const placeOrder = asyncHandler(async (req, res) => {
 });
 const getAllOrders = asyncHandler(async (req, res) => {
   try {
-    // Fetch all orders from the database
-    const orders = await Order.find();
+    // Fetch all orders from the database, populate customer details
+    const orders = await Order.find().populate("customer", "fullName email");
 
     return res
       .status(200)
@@ -53,9 +60,17 @@ const getOrderById = async (req, res) => {
   const { id } = req.params; // Extract the order ID from request parameters
   console.log("Received order ID:", id);
   try {
-    // Find the order by ID
-    const order = await Order.findById(id);
+    // Find the order by ID and populate the user and product details
+    const order = await Order.findById(id)
+      .populate("customer", "fullName email") // Assuming 'user' is the reference to User model
+      .populate({
+        path: "products.product", // Assuming 'products' is an array of products in the order
+        model: "Product",
+        select: "name image rating category attributes",
+      });
+
     console.log("Retrieved order:", order);
+
     // If order is not found, return an error response
     if (!order) {
       return res
@@ -80,7 +95,7 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
       throw new ApiError(400, "Order ID is required");
     }
 
-    const { status } = req.body;
+    const { status, shippingLink } = req.body;
 
     if (!status) {
       throw new ApiError(400, "Status field is required");
@@ -98,20 +113,35 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
       throw new ApiError(400, "Invalid status value");
     }
 
-    // Find the order by orderID and update its status
-    const order = await Order.findOneAndUpdate(
-      { orderID: orderId },
-      { status },
-      { new: true } // Return the updated document
-    );
+    // Find the order by orderID and update its status and shippingLink
+    const order = await Order.findOne({ orderID: orderId });
 
     if (!order) {
       throw new ApiError(404, "Order not found");
     }
 
+    // Update status and shippingLink
+    order.status = status;
+    if (shippingLink) {
+      order.shippingInfo.shippingLink = shippingLink;
+    }
+
+    // Manually add to order history and set the flag
+    order.orderHistory.push({ status });
+    order.skipOrderHistoryUpdate = true;
+
+    // Save the updated order
+    await order.save();
+
     return res
       .status(200)
-      .json(new ApiResponse(200, order, "Order status updated successfully"));
+      .json(
+        new ApiResponse(
+          200,
+          order,
+          "Order status and shipping link updated successfully"
+        )
+      );
   } catch (error) {
     console.error("Error updating order status:", error);
     if (error instanceof ApiError) {

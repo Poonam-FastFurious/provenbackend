@@ -60,6 +60,10 @@ const orderSchema = new mongoose.Schema(
       phoneNumber: {
         type: String,
       },
+      shippingLink: {
+        // New field
+        type: String,
+      },
     },
     paymentInfo: {
       method: {
@@ -93,7 +97,7 @@ const orderSchema = new mongoose.Schema(
 
 // Middleware to update the order history
 orderSchema.pre("save", function (next) {
-  if (this.isModified("status")) {
+  if (this.isModified("status") && !this.skipOrderHistoryUpdate) {
     this.orderHistory.push({ status: this.status });
   }
   next();

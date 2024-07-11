@@ -114,7 +114,7 @@ export const getPaymentDetails = async (req, res) => {
 export const getAllPayments = asyncHandler(async (req, res) => {
   const payments = await Payment.find()
     .populate("order")
-    .populate("user", "name email");
+    .populate("user", "fullName email");
   return res.json({
     success: true,
     data: payments,

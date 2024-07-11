@@ -65,6 +65,10 @@ const productSchema = new Schema(
         default: "in_stock",
       },
     },
+    sku: {
+      type: String,
+      required: true,
+    },
   },
   { timestamps: true }
 );
