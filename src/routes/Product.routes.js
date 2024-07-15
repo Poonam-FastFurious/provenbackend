@@ -6,6 +6,7 @@ import {
   getAllProducts,
   getSingleProduct,
   updateProduct,
+  searchProducts
 } from "../controllers/product.controler.js";
 
 const router = Router();
@@ -26,6 +27,7 @@ router.route("/add").post(
 router.route("/delete").delete(deleteProduct);
 router.route("/products").get(getAllProducts);
 router.route("/product").get(getSingleProduct);
+router.route("/searchproduct").get(searchProducts);
 router.route("/update").patch(
   upload.fields([
     {
