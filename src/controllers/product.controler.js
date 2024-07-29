@@ -1,10 +1,10 @@
-// import { Category } from "../models/Category.model.js";
-// import { Product } from "../models/Product.models.js";
-// import { ApiResponse } from "../utils/ApiResponse.js";
-// import { SearchData } from "../models/Search.modal.js";
-// import { ApiError } from "../utils/ApiError.js";
-// import { asyncHandler } from "../utils/asyncHandler.js";
-// import { uploadOnCloudinary } from "../utils/Cloudinary.js";
+import { Category } from "../models/Category.model.js";
+import { Product } from "../models/Product.models.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+
+import { ApiError } from "../utils/ApiError.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 
 // const addProduct = async (req, res) => {
 //   try {
@@ -294,91 +294,16 @@
 //         .json({ success: false, message: error.message });
 //     }
 
-//     return res
-//       .status(500)
-//       .json({ success: false, message: "Internal server error" });
-//   }
-// };
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+};
 
-// const buildQuery = (params) => {
-//   const query = {};
-
-//   if (params.productTitle) {
-//     query.productTitle = { $regex: params.productTitle, $options: "i" }; // Case-insensitive regex
-//   }
-//   if (params.description) {
-//     query.description = { $regex: params.description, $options: "i" };
-//   }
-//   if (params.oneTimePrice) {
-//     query.oneTimePrice = params.oneTimePrice;
-//   }
-//   if (params.subscriptionPrice) {
-//     query.subscriptionPrice = params.subscriptionPrice;
-//   }
-//   if (params.category) {
-//     query.category = params.category;
-//   }
-//   if (params.subCategory) {
-//     query.subCategory = params.subCategory;
-//   }
-//   if (params.discountPercentage) {
-//     query.discountPercentage = params.discountPercentage;
-//   }
-//   if (params.rating) {
-//     query.rating = params.rating;
-//   }
-//   if (params.stock) {
-//     query.stock = params.stock;
-//   }
-//   if (params.status) {
-//     query.status = params.status;
-//   }
-//   if (params.visibility) {
-//     query.visibility = params.visibility;
-//   }
-//   if (params.productTags) {
-//     query.productTags = { $in: params.productTags };
-//   }
-//   if (params.productShortDescription) {
-//     query.productShortDescription = {
-//       $regex: params.productShortDescription,
-//       $options: "i",
-//     };
-//   }
-//   if (params.IsApproved) {
-//     query.IsApproved = params.IsApproved;
-//   }
-//   if (params.type) {
-//     query.type = params.type;
-//   }
-//   if (params.itemType) {
-//     query.itemType = params.itemType;
-//   }
-
-//   return query;
-// };
-
-// const searchProducts = asyncHandler(async (req, res) => {
-//   const query = buildQuery(req.query);
-
-//   const products = await Product.find(query);
-
-//   if (products.length === 0) {
-//     await SearchData.create({ searchParam: req.query });
-
-//     throw new ApiError(404, "No products found matching the criteria.");
-//   }
-
-//   return res.json(
-//     new ApiResponse(200, products, "Products retrieved successfully")
-//   );
-// });
-
-// export {
-//   addProduct,
-//   deleteProduct,
-//   getAllProducts,
-//   getSingleProduct,
-//   updateProduct,
-//   searchProducts,
-// };
+export {
+  addProduct,
+  deleteProduct,
+  getAllProducts,
+  getSingleProduct,
+  updateProduct,
+};
