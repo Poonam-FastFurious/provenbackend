@@ -4,40 +4,41 @@ import { Notification } from "../models/Notification.model.js";
 import { ApiError } from "../utils/ApiError.js";
 
 const CreateNotification = asyncHandler(async (req, res) => {
-
   const { Type, Title, Detail } = req.body;
 
   if ([Type, Title, Detail].some((field) => field?.trim() === "")) {
     throw new ApiError(400, "All fields are required");
   }
 
-  const existedNotification = await Notification.findOne({
-    $or: [{ Type }, { Title }, { Detail }],
-  });
-
-  if (existedNotification) {
-    throw new ApiError(409, "Notification with Type/Title/Detail already exists");
-  }
-
   const notification = await Notification.create({
     Type,
     Title,
-    Detail
+    Detail,
   });
 
-  const createdNotification = await Notification.findById(notification._id).select();
+  const createdNotification = await Notification.findById(
+    notification._id
+  ).select();
 
   if (!createdNotification) {
-    throw new ApiError(500, "Something went wrong while Creating the Notification");
+    throw new ApiError(
+      500,
+      "Something went wrong while Creating the Notification"
+    );
   }
 
   return res
     .status(201)
-    .json(new ApiResponse(200, createdNotification, "Notification Created Successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        createdNotification,
+        "Notification Created Successfully"
+      )
+    );
 });
 
 const UpdateNotification = asyncHandler(async (req, res) => {
-
   const { Type, Title, Detail, id } = req.body;
 
   if ([Type, Title, Detail].some((field) => field?.trim() === "")) {
@@ -50,14 +51,17 @@ const UpdateNotification = asyncHandler(async (req, res) => {
       $set: {
         Type,
         Title,
-        Detail
-      }
+        Detail,
+      },
     },
-    { new: true }).select();
+    { new: true }
+  ).select();
 
   return res
     .status(201)
-    .json(new ApiResponse(200, notification, "Notification Update Successfully"));
+    .json(
+      new ApiResponse(200, notification, "Notification Update Successfully")
+    );
 });
 
 const deleteNotification = asyncHandler(async (req, res) => {
@@ -89,7 +93,13 @@ const getAllNotification = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, notification, "All Notification fetched successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        notification,
+        "All Notification fetched successfully"
+      )
+    );
 });
 
 const getNotification = asyncHandler(async (req, res) => {
@@ -107,7 +117,13 @@ const getNotification = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, { notification }, "Notification fetched successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        { notification },
+        "Notification fetched successfully"
+      )
+    );
 });
 
 export {
@@ -115,5 +131,5 @@ export {
   UpdateNotification,
   deleteNotification,
   getAllNotification,
-  getNotification
+  getNotification,
 };
