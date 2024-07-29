@@ -2,7 +2,7 @@ import { Review } from "../models/Productreview.modal.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 
 // Controller function to add a new review
 const addReview = asyncHandler(async (req, res) => {
