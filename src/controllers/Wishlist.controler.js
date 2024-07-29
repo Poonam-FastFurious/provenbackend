@@ -1,7 +1,8 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
-import { Product } from "../models/Product.models.js";
+
 import { Wishlist } from "../models/Wishlist.modal.js";
+import { Product } from "../models/NewProduct.modal.js";
 
 const addToWishlist = asyncHandler(async (req, res) => {
   const { productId } = req.body;
@@ -51,7 +52,7 @@ const addToWishlist = asyncHandler(async (req, res) => {
           : "";
       wishlist.items.push({
         productId: product._id,
-        productName: product.name,
+        productName: product.title,
         productDescription: product.description,
         quantity: 1,
         price: product.price,

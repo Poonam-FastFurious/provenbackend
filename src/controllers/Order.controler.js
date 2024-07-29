@@ -62,7 +62,7 @@ const getOrderById = async (req, res) => {
   try {
     // Find the order by ID and populate the user and product details
     const order = await Order.findById(id)
-      .populate("customer", "fullName email") // Assuming 'user' is the reference to User model
+      .populate("customer", "fullName email mobile") // Assuming 'user' is the reference to User model
       .populate({
         path: "products.product", // Assuming 'products' is an array of products in the order
         model: "Product",

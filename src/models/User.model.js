@@ -2,53 +2,55 @@ import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 // Define a schema for the user
-const userSchema = new mongoose.Schema({
-  fullName: {
-    type: String,
-    required: true,
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-  password: {
-    type: String,
-    required: true,
-  },
-  avatar: {
-    type: String,
-  },
-  orders: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Order",
+const userSchema = new mongoose.Schema(
+  {
+    fullName: {
+      type: String,
+      required: true,
     },
-  ],
-  address: {
-    type: String,
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    password: {
+      type: String,
+      required: true,
+    },
+    avatar: {
+      type: String,
+    },
+    orders: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Order",
+      },
+    ],
+    address: {
+      type: String,
+    },
+    username: {
+      type: String,
+    },
+    mobile: {
+      type: Number,
+    },
+    dob: {
+      type: Date,
+    },
+    gender: {
+      type: String,
+      enum: ["Male", "Female", "Other"],
+    },
+    refreshToken: {
+      type: String,
+      required: false,
+    },
   },
-  username: {
-    type: String,
-  },
-  mobile: {
-    type: Number,
-  },
-  dob: {
-    type: Date,
-  },
-  gender: {
-    type: String,
-    enum: ["Male", "Female", "Other"],
-  },
-  refreshToken: {
-    type: String,
-    required: false,
-  },
-}
-  , {
-    timestamps: true
-  });
+  {
+    timestamps: true,
+  }
+);
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
 

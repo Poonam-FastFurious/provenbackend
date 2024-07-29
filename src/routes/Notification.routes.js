@@ -10,7 +10,7 @@ import {
 
 const router = Router();
 
-router.route("/create").post(CreateNotification);
+router.route("/send").post(CreateNotification);
 router.route("/update").patch(UpdateNotification);
 router.route("/delete").delete(deleteNotification);
 router.route("/allnotification").get(getAllNotification);

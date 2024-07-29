@@ -66,8 +66,7 @@ export const getAllSliders = asyncHandler(async (req, res) => {
 
 export const updateSlider = asyncHandler(async (req, res) => {
       try {
-            const { id } = req.params;
-            const { title, details, link } = req.body;
+            const { id, title, details, link } = req.body;
 
             // Check if the slider exists
             const slider = await Slider.findById(id);
@@ -75,10 +74,22 @@ export const updateSlider = asyncHandler(async (req, res) => {
                   throw new ApiError(404, "Slider not found");
             }
 
-            // Update the slider fields
+            // Update slider fields
             slider.title = title;
             slider.details = details;
             slider.link = link;
+
+            // Handle slider image update if provided
+            if (req.files && req.files.sliderImage && req.files.sliderImage.length > 0) {
+                  const imageLocalPath = req.files.sliderImage[0].path;
+                  const uploadedImage = await uploadOnCloudinary(imageLocalPath);
+
+                  if (!uploadedImage) {
+                        throw new ApiError(500, "Failed to upload slider image");
+                  }
+
+                  slider.sliderImage = uploadedImage.url;
+            }
 
             // Save the updated slider
             await slider.save();
@@ -125,5 +136,39 @@ export const deleteSlider = asyncHandler(async (req, res) => {
             return res
                   .status(500)
                   .json({ success: false, message: "Internal server error" });
+      }
+});
+export const getSliderById = asyncHandler(async (req, res) => {
+      try {
+            const { id } = req.params;
+
+            if (!id) {
+                  throw new ApiError(400, "Slider ID is required");
+            }
+
+            const slider = await Slider.findById(id);
+            if (!slider) {
+                  throw new ApiError(404, "Slider not found");
+            }
+
+            return res.status(200).json({
+                  success: true,
+                  data: slider,
+                  message: "Slider details retrieved successfully",
+            });
+      } catch (error) {
+            console.error("Error retrieving slider details:", error);
+
+            if (error instanceof ApiError) {
+                  return res.status(error.statusCode).json({
+                        success: false,
+                        message: error.message,
+                  });
+            }
+
+            return res.status(500).json({
+                  success: false,
+                  message: "Internal server error",
+            });
       }
 });

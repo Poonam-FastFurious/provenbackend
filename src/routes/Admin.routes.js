@@ -5,6 +5,7 @@ import {
   loginAdmin,
   logoutAdmin,
   updateAdmin,
+  verifyPassword,
 } from "../controllers/Admin.controler.js";
 
 import { adminVerifyJWT } from "../middlewares/adminVerifyJWT.js";
@@ -12,6 +13,7 @@ import { adminVerifyJWT } from "../middlewares/adminVerifyJWT.js";
 const router = Router();
 
 router.route("/login").post(loginAdmin);
+router.route("/verifyPassword").post(verifyPassword);
 router.route("/logout").post(logoutAdmin);
 router.route("/Profile").get(getAdminDetails);
 router.route("/update").patch(updateAdmin);

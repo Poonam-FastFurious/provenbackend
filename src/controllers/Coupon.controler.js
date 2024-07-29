@@ -4,7 +4,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 
 const createCoupon = asyncHandler(async (req, res) => {
   // Get coupon details from frontend
-  const { title, code, numberOfTimes, discount, status } = req.body;
+  const { title, code, discount, status } = req.body;
 
   // Validation - Check if required fields are not empty
   if ([title, code, discount].some((field) => !field)) {
@@ -22,7 +22,6 @@ const createCoupon = asyncHandler(async (req, res) => {
   const coupon = await Coupon.create({
     title,
     code,
-    numberOfTimes: numberOfTimes || 0, // Default numberOfTimes to 0 if not provided
     discount,
     status: status || "active", // Default status to 'active' if not provided
   });
@@ -67,7 +66,7 @@ const getCoupons = asyncHandler(async (req, res) => {
 });
 const editCoupon = asyncHandler(async (req, res) => {
   // Get coupon details from frontend
-  const { id, title, code, numberOfTimes, discount, status } = req.body;
+  const { id, title, code, discount, status } = req.body;
 
   // Validation - Check if required fields are not empty
   if (![id, title, code, discount].every((field) => field)) {
@@ -84,7 +83,6 @@ const editCoupon = asyncHandler(async (req, res) => {
   // Update coupon details
   existingCoupon.title = title;
   existingCoupon.code = code;
-  existingCoupon.numberOfTimes = numberOfTimes;
   existingCoupon.discount = discount;
   existingCoupon.status = status || "active";
 

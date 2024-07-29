@@ -160,7 +160,7 @@ const logoutAdmin = async (req, res) => {
 const getAdminDetails = async (req, res) => {
   connectDB();
   try {
-    const adminId = req.body.adminId; // Extract adminId from query params
+    const adminId = req.query.adminId; // Extract adminId from query params
     if (!adminId) {
       throw new ApiError(400, "Admin ID is required in query params");
     }
@@ -294,8 +294,95 @@ const changeAdminPassword = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Error in changing admin password", error.message);
   }
 });
+const verifyPassword = asyncHandler(async (req, res) => {
+  try {
+    const { password } = req.body;
+
+    // Validate input
+    if (!password) {
+      throw new ApiError(400, "Password is required");
+    }
+
+    // Find the admin (assuming there's only one admin)
+    const admin = await Admin.findOne({ isAdmin: true });
+
+    if (!admin) {
+      throw new ApiError(404, "Admin not found");
+    }
+
+    // Validate password
+    const isPasswordValid = await admin.isPasswordCorrect(password);
+
+    if (!isPasswordValid) {
+      throw new ApiError(401, "Invalid password");
+    }
+
+    // Generate access and refresh tokens
+    const generateAccessAndRefreshTokens = async (userId) => {
+      try {
+        const admin = await Admin.findById(userId);
+        const accessToken = admin.generateAccessToken();
+        const refreshToken = admin.generateRefreshToken();
+
+        admin.refreshToken = refreshToken;
+        admin.loginTime = new Date();
+        await admin.save({ validateBeforeSave: false });
+
+        return { accessToken, refreshToken };
+      } catch (error) {
+        throw new ApiError(
+          500,
+          "Something went wrong while generating refresh and access token"
+        );
+      }
+    };
+
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(admin._id);
+
+    // Fetch logged-in admin data (excluding password and refreshToken)
+    const loggedInAdmin = await Admin.findById(admin._id).select(
+      "-password -refreshToken"
+    );
+    admin.loginstatus = true;
+    await admin.save({ validateBeforeSave: false });
+
+    // Set options for cookies
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true, // Ensure cookies are secure in production
+    };
+
+    // Send response with cookies and logged-in admin data
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, cookieOptions)
+      .cookie("refreshToken", refreshToken, cookieOptions)
+      .json(
+        new ApiResponse(
+          200,
+          { admin: loggedInAdmin, accessToken, refreshToken },
+          "Password is correct, tokens generated successfully"
+        )
+      );
+  } catch (error) {
+    console.error("Error during password verification:", error);
+
+    // Handle specific errors
+    if (error instanceof ApiError) {
+      return res
+        .status(error.statusCode)
+        .json({ success: false, message: error.message });
+    }
+
+    // Handle other unexpected errors
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+
 
 export {
+  verifyPassword,
   loginAdmin,
   logoutAdmin,
   getAdminDetails,

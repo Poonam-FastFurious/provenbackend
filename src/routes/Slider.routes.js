@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { upload } from "../middlewares/FileUpload.middlwares.js";
-import { addSlider, deleteSlider, getAllSliders, updateSlider } from "../controllers/Slider.controler.js";
+import { addSlider, deleteSlider, getAllSliders, getSliderById, updateSlider } from "../controllers/Slider.controler.js";
 
 
 const router = Router();
@@ -25,4 +25,6 @@ router.route("/edit").patch(
 );
 router.route("/allslider").get(getAllSliders);
 router.route("/delete").delete(deleteSlider);
+router.route("/:id").get(getSliderById);
+
 export default router;

@@ -1,8 +1,9 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Cart } from "../models/Cart.model.js";
-import { Product } from "../models/Product.models.js"; // Import the Product model
+
 import { User } from "../models/User.model.js"; // Import the User model
 import { ApiError } from "../utils/ApiError.js";
+import { Product } from "../models/NewProduct.modal.js";
 
 const addToCart = asyncHandler(async (req, res) => {
   const { productId, quantity } = req.body;
