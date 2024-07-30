@@ -405,7 +405,7 @@ const forgotPassword = async (req, res) => {
     });
 
     // Construct the password reset link
-    const resetLink = `http://localhost:3001/reset_password/${admin._id}/${token}`;
+    const resetLink = `http://provenadmin.brandbell.in/reset_password/${admin._id}/${token}`;
 
     // Use the sendEmail function to send the reset email
     await sendEmail({

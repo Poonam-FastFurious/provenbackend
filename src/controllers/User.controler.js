@@ -322,7 +322,7 @@ const forgotPassword = async (req, res) => {
     });
 
     // Construct the password reset link
-    const resetLink = `http://localhost:5173/Reset-password/${user._id}/${token}`;
+    const resetLink = `http://provenro.brandbell.in/Reset-password/${user._id}/${token}`;
 
     // Use the sendEmail function to send the reset email
     await sendEmail({
