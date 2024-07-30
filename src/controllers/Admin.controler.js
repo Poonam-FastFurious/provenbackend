@@ -396,6 +396,7 @@ const forgotPassword = async (req, res) => {
     const admin = await Admin.findOne({ email });
     if (!admin) {
       return res.status(404).json({ Status: "User not found" });
+      throw new ApiError(400, "EUser not found");
     }
 
     // Generate a reset token

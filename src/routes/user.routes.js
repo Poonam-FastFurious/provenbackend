@@ -10,6 +10,8 @@ import {
   updateAccountDetails,
   getAllUsers,
   getUserProfile,
+  forgotPassword,
+  resetPassword,
 } from "../controllers/User.controler.js";
 
 import { verifyJWT } from "../middlewares/auth.middlwares.js";
@@ -31,6 +33,8 @@ router.route("/login").post(loginUser);
 
 //secured routes
 router.route("/logout").post(verifyJWT, logoutUser);
+router.route("/forgotpassword").post(forgotPassword);
+router.route("/resetpassword").patch(resetPassword);
 router.route("/refresh-token").post(refreshAccessToken);
 router.route("/change-password").post(verifyJWT, changeCurrentPassword);
 router.route("/current-user").get(verifyJWT, getCurrentUser);
