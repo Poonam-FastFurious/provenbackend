@@ -356,14 +356,14 @@ const resetPassword = async (req, res) => {
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, async (err, decoded) => {
       if (err) {
         console.error("Error verifying token:", err);
-        return res.status(400).json({ Status: "Invalid or expired token" });
+        return res.status(400).json({ Status: "Error with token" });
       }
 
       // Check if the decoded token's user ID matches the provided ID
-      if (decoded._id !== id) {
+      if (decoded.id !== id) {
         return res
           .status(400)
-          .json({ Status: "Token does not match the provided user ID" });
+          .json({ Status: "Invalid token for the provided user ID" });
       }
 
       // Hash the new password
@@ -371,14 +371,7 @@ const resetPassword = async (req, res) => {
 
       // Update the user's password in the database
       try {
-        const user = await User.findByIdAndUpdate(
-          id,
-          { password: hashedPassword },
-          { new: true }
-        );
-        if (!user) {
-          return res.status(404).json({ Status: "User not found" });
-        }
+        await User.findByIdAndUpdate(id, { password: hashedPassword });
         res.status(200).json({
           Status: "Success",
           message: "Password updated successfully",
