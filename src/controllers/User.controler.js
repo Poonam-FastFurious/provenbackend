@@ -327,7 +327,7 @@ const forgotPassword = async (req, res) => {
     // Use the sendEmail function to send the reset email
     await sendEmail({
       email: user.email,
-      subject: "Reset Password Link",
+      subject: ` "Reset Password Link"`,
       message: `Click the link to reset your password: ${resetLink}`,
     });
 
@@ -356,14 +356,14 @@ const resetPassword = async (req, res) => {
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, async (err, decoded) => {
       if (err) {
         console.error("Error verifying token:", err);
-        return res.status(400).json({ Status: "Error with token" });
+        return res.status(400).json({ Status: "Invalid or expired token" });
       }
 
       // Check if the decoded token's user ID matches the provided ID
-      if (decoded.id !== id) {
+      if (decoded._id !== id) {
         return res
           .status(400)
-          .json({ Status: "Invalid token for the provided user ID" });
+          .json({ Status: "Token does not match the provided user ID" });
       }
 
       // Hash the new password
@@ -371,7 +371,14 @@ const resetPassword = async (req, res) => {
 
       // Update the user's password in the database
       try {
-        await User.findByIdAndUpdate(id, { password: hashedPassword });
+        const user = await User.findByIdAndUpdate(
+          id,
+          { password: hashedPassword },
+          { new: true }
+        );
+        if (!user) {
+          return res.status(404).json({ Status: "User not found" });
+        }
         res.status(200).json({
           Status: "Success",
           message: "Password updated successfully",
