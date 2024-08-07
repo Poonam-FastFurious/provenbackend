@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import bcrypt from "bcrypt";
@@ -7,7 +6,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { User } from "../models/User.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import sendEmail from "../utils/SendEmail.js";
-
+import axios from "axios";
 const generateAccessAndRefereshTokens = async (userId) => {
   try {
     const user = await User.findById(userId);
@@ -395,7 +394,87 @@ const resetPassword = async (req, res) => {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+const generateOTP = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
 
+const sendSMS = async (mobile, otp) => {
+  const apiUrl = `http://msg.venetsmedia.com/api/pushsms?user=proven01&authkey=92c24oHkJe8A&sender=PROVRO&mobile=${mobile}&text=Your+OTP+to+login+into+Proven+App+is+${otp}+PROVRO.&rpt=1&summary=1&output=json&entityid=1201161080253395052&templateid=1207172286223241222`;
+  try {
+    const response = await axios.get(apiUrl);
+    return response.data;
+  } catch (error) {
+    console.error("Error sending SMS:", error);
+    throw new ApiError(500, "Something went wrong while sending SMS");
+  }
+};
+
+const requestOTP = asyncHandler(async (req, res) => {
+  const { mobile } = req.body;
+
+  if (!mobile) {
+    throw new ApiError(400, "Mobile number is required");
+  }
+
+  const user = await User.findOne({ mobile });
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const otp = generateOTP();
+  user.otp = otp;
+  user.otpExpires = new Date(Date.now() + 10 * 60 * 1000); // OTP valid for 10 minutes
+  await user.save();
+
+  await sendSMS(user.mobile, otp);
+
+  res.status(200).json(new ApiResponse(200, null, "OTP sent to your mobile"));
+});
+
+const verifyOTPAndLogin = asyncHandler(async (req, res) => {
+  const { mobile, otp } = req.body;
+
+  if (!mobile || !otp) {
+    throw new ApiError(400, "Mobile number and OTP are required");
+  }
+
+  const user = await User.findOne({ mobile });
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const currentTime = Date.now();
+  if (user.otp !== otp || user.otpExpires < currentTime) {
+    throw new ApiError(401, "Invalid or expired OTP");
+  }
+
+  user.otp = undefined;
+  user.otpExpires = undefined;
+  await user.save();
+
+  const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(
+    user._id
+  );
+
+  res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        accessToken,
+        refreshToken,
+        user: {
+          _id: user._id,
+          mobile: user.mobile,
+          name: user.fullName,
+        },
+      },
+
+      "User logged in successfully"
+    )
+  );
+});
 export {
   registerUser,
   loginUser,
@@ -409,4 +488,6 @@ export {
   getUserProfile,
   forgotPassword,
   resetPassword,
+  requestOTP,
+  verifyOTPAndLogin,
 };
