@@ -41,6 +41,18 @@ const addProduct = asyncHandler(async (req, res) => {
       throw new ApiError(400, "Stocks and price must be valid numbers");
     }
 
+    // Validate SKU format (example: SKU must be alphanumeric)
+    const skuRegex = /^[A-Za-z0-9-]+$/;
+    if (!skuRegex.test(sku)) {
+      throw new ApiError(400, "SKU must be alphanumeric and follow the required format");
+    }
+
+    // Validate YouTube video URL (basic validation)
+    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
+    if (youtubeVideoLink && !youtubeRegex.test(youtubeVideoLink)) {
+      throw new ApiError(400, "Invalid YouTube video URL");
+    }
+
     // Check for existing product by SKU
     const existingProduct = await Product.findOne({ sku });
     if (existingProduct) {
@@ -117,65 +129,15 @@ const addProduct = asyncHandler(async (req, res) => {
   }
 });
 
+
+
 const getAllProducts = asyncHandler(async (req, res) => {
   try {
-    // Extract query parameters for pagination, filtering, and search
-    const {
-      page = 1,
-      limit = 10,
-      category,
-      minPrice,
-      maxPrice,
-      search,
-    } = req.query;
+    // Fetch all products
+    const products = await Product.find();
 
-    // Validate pagination parameters
-    const pageNumber = parseInt(page, 10) || 1;
-    const pageSize = parseInt(limit, 10) || 10;
-
-    if (pageNumber < 1 || pageSize < 1) {
-      throw new ApiError(400, "Invalid pagination parameters");
-    }
-
-    // Construct the query object for filtering and searching
-    const query = {};
-
-    // Add category filter if provided
-    if (category) {
-      query.categories = category;
-    }
-
-    // Add price range filters if provided
-    if (minPrice) {
-      const min = parseFloat(minPrice);
-      if (!isNaN(min)) {
-        query.price = { ...query.price, $gte: min };
-      }
-    }
-    if (maxPrice) {
-      const max = parseFloat(maxPrice);
-      if (!isNaN(max)) {
-        query.price = { ...query.price, $lte: max };
-      }
-    }
-
-    // Add search functionality
-    if (search) {
-      const searchRegex = new RegExp(search, "i"); // 'i' for case-insensitive search
-      query.$or = [
-        { title: { $regex: searchRegex } },
-        { description: { $regex: searchRegex } },
-        { tags: { $regex: searchRegex } },
-      ];
-    }
-
-    // Fetch the products with pagination and filtering
-    const products = await Product.find(query)
-      .skip((pageNumber - 1) * pageSize)
-      .limit(pageSize);
-
-    // Count the total number of products matching the query
-    const totalProducts = await Product.countDocuments(query);
+    // Count the total number of products
+    const totalProducts = await Product.countDocuments();
 
     // Send the response
     return res.status(200).json({
@@ -183,8 +145,6 @@ const getAllProducts = asyncHandler(async (req, res) => {
       message: "Products retrieved successfully",
       data: products,
       total: totalProducts,
-      currentPage: pageNumber,
-      totalPages: Math.ceil(totalProducts / pageSize),
     });
   } catch (error) {
     console.error("Error retrieving products:", error);
@@ -202,6 +162,7 @@ const getAllProducts = asyncHandler(async (req, res) => {
     });
   }
 });
+
 
 const deleteProduct = asyncHandler(async (req, res) => {
   try {

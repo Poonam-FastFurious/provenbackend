@@ -154,5 +154,32 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     }
   }
 });
+export const getTotalPayments = async (req, res) => {
+  try {
+    // Aggregate the totalAmount from all orders
+    const totalPayments = await Order.aggregate([
+      {
+        $group: {
+          _id: null,
+          total: { $sum: "$totalAmount" }
+        }
+      }
+    ]);
+
+    // If no orders exist, return total as 0
+    const totalAmount = totalPayments.length > 0 ? totalPayments[0].total : 0;
+
+    res.status(200).json({
+      success: true,
+      totalAmount,
+    });
+  } catch (error) {
+    console.error("Error calculating total payments:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
 
 export { placeOrder, getAllOrders, updateOrderStatus, getOrderById };

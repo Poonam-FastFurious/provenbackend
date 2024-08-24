@@ -43,6 +43,7 @@ const CreateEmployee = asyncHandler(async (req, res) => {
     profilepic: imageUrl,
   });
 
+  await employee.save();
   const createdEmployee = await Employee.findById(employee._id).select();
 
   if (!createdEmployee) {
@@ -146,6 +147,126 @@ const getEmployee = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, { employee }, "Employee fetched successfully"));
 });
+const loginEmployee = asyncHandler(async (req, res) => {
+  const generateAccessAndRefreshTokens = async (userId) => {
+    try {
+      const employee = await Employee.findById(userId);
+      const accessToken = employee.generateAccessToken();
+      const refreshToken = employee.generateRefreshToken();
+
+      employee.refreshToken = refreshToken;
+      employee.loginTime = new Date();
+      await employee.save({ validateBeforeSave: false });
+
+      return { accessToken, refreshToken };
+    } catch (error) {
+      throw new ApiError(
+        500,
+        "Something went wrong while generating refresh and access tokens"
+      );
+    }
+  };
+
+  try {
+    const { email, mobileNumber, password } = req.body;
+
+    if (!mobileNumber && !email) {
+      throw new ApiError(400, "Mobile number or email is required");
+    }
+
+    const employee = await Employee.findOne({ $or: [{ mobileNumber }, { email }] });
+
+    if (!employee) {
+      throw new ApiError(404, "Employee does not exist");
+    }
+
+    const isPasswordValid = await employee.isPasswordCorrect(password);
+
+    if (!isPasswordValid) {
+      throw new ApiError(401, "Invalid user credentials");
+    }
+
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+      employee._id
+    );
+
+    const loggedInUser = await Employee.findById(employee._id).select(
+      "-password -refreshToken"
+    );
+    employee.loginStatus = true;
+    await employee.save({ validateBeforeSave: false });
+
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", refreshToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          { user: loggedInUser, accessToken, refreshToken },
+          "Employee logged in successfully"
+        )
+      );
+  } catch (error) {
+    console.error("Error during login:", error);
+
+    if (error instanceof ApiError) {
+      return res
+        .status(error.statusCode)
+        .json({ success: false, message: error.message });
+    }
+
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+const logoutEmployee = asyncHandler(async (req, res) => {
+  try {
+    const { employeeId } = req.body; // Assuming employeeId is sent in the request body
+
+    if (!employeeId) {
+      throw new ApiError(400, "Employee ID is required");
+    }
+
+    const employee = await Employee.findById(employeeId);
+
+    if (!employee) {
+      throw new ApiError(404, "Employee not found");
+    }
+
+    // Clear the refresh token and update login status
+    employee.refreshToken = null;
+    employee.loginStatus = false;
+    await employee.save({ validateBeforeSave: false });
+
+    // Clear the cookies
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        null,
+        "Employee logged out successfully"
+      )
+    );
+  } catch (error) {
+    console.error("Error during logout:", error);
+
+    if (error instanceof ApiError) {
+      return res
+        .status(error.statusCode)
+        .json({ success: false, message: error.message });
+    }
+
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
 
 export {
   CreateEmployee,
@@ -153,4 +274,6 @@ export {
   deleteEmployee,
   getAllEmployees,
   getEmployee,
+  loginEmployee,
+  logoutEmployee
 };
