@@ -60,13 +60,19 @@ const getOrderById = async (req, res) => {
   const { id } = req.params; // Extract the order ID from request parameters
   console.log("Received order ID:", id);
   try {
-    // Find the order by ID and populate the user and product details
+    // Find the order by ID and populate the user, product, and address details
     const order = await Order.findById(id)
-      .populate("customer", "fullName email mobile") // Assuming 'user' is the reference to User model
+      .populate("customer", "fullName email mobile") // Populate customer details
       .populate({
-        path: "products.product", // Assuming 'products' is an array of products in the order
-        model: "Product",
-        select: "name image rating category attributes",
+        path: "products.product", // Populate product details
+        model: "Product", // Correct model name
+        select: "title image stocks price categories", // Fields to select
+      })
+      .populate({
+        path: "shippingInfo.address", // Populate the shipping address details
+        model: "UserAddress", // Reference the correct address model
+        select:
+          "fullName phoneNumber streetAddress city state postalCode country addressType", // Select relevant fields for the address
       });
 
     console.log("Retrieved order:", order);
@@ -87,6 +93,7 @@ const getOrderById = async (req, res) => {
       .json({ success: false, message: "Internal server error" });
   }
 };
+
 const updateOrderStatus = asyncHandler(async (req, res) => {
   try {
     const orderId = req.body.orderID;
@@ -161,9 +168,9 @@ export const getTotalPayments = async (req, res) => {
       {
         $group: {
           _id: null,
-          total: { $sum: "$totalAmount" }
-        }
-      }
+          total: { $sum: "$totalAmount" },
+        },
+      },
     ]);
 
     // If no orders exist, return total as 0
