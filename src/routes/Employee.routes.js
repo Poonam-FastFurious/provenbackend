@@ -17,15 +17,7 @@ router.route("/create").post(
   ]),
   CreateEmployee
 );
-router.route("/update").patch(
-  upload.fields([
-    {
-      name: "image",
-      maxCount: 1,
-    },
-  ]),
-  UpdateEmployee
-);
+router.route("/update").patch(UpdateEmployee);
 router.route("/delete").delete(deleteEmployee);
 router.route("/allEmployees").get(getAllEmployees);
 router.route("/Employee").get(getEmployee);

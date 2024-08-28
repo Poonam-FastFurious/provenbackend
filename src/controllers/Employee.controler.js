@@ -24,15 +24,9 @@ const CreateEmployee = asyncHandler(async (req, res) => {
     );
   }
 
-  const imageLocalPath = req.files?.image[0].path;
-  let imageUrl;
-  if (imageLocalPath) {
-    const image = await uploadOnCloudinary(imageLocalPath);
-    if (!image) {
-      throw new ApiError(400, "Failed to upload image");
-    }
-    imageUrl = image.url;
-  }
+
+
+
 
   const employee = await Employee.create({
     name,
@@ -40,7 +34,7 @@ const CreateEmployee = asyncHandler(async (req, res) => {
     mobileNumber,
     password,
     employeeRole,
-    profilepic: imageUrl,
+
   });
 
   await employee.save();
@@ -57,44 +51,95 @@ const CreateEmployee = asyncHandler(async (req, res) => {
     );
 });
 
+// const UpdateEmployee = asyncHandler(async (req, res) => {
+//   const { name, email, password, mobileNumber, employeeRole, id } = req.body;
+
+//   if (
+//     [email, name, password, employeeRole].some((field) => field?.trim() === "")
+//   ) {
+//     throw new ApiError(400, "All fields are required");
+//   }
+
+
+
+
+
+//   const employee = await Employee.findByIdAndUpdate(
+//     id,
+//     {
+//       $set: {
+//         name,
+//         email,
+//         mobileNumber,
+//         password,
+//         employeeRole,
+
+//       },
+//     },
+//     { new: true }
+//   ).select();
+
+//   return res
+//     .status(201)
+//     .json(new ApiResponse(200, employee, "Employee Update Successfully"));
+// });
+
 const UpdateEmployee = asyncHandler(async (req, res) => {
-  const { name, email, password, mobileNumber, employeeRole, id } = req.body;
+  const { employeeId, name, email, password, mobileNumber, employeeRole } = req.body;
 
-  if (
-    [email, name, password, employeeRole].some((field) => field?.trim() === "")
-  ) {
-    throw new ApiError(400, "All fields are required");
+  if (!employeeId) {
+    throw new ApiError(400, "Employee ID is required");
   }
 
-  const imageLocalPath = req.files?.image[0].path;
-  let imageUrl;
-  if (imageLocalPath) {
-    const image = await uploadOnCloudinary(imageLocalPath);
-    if (!image) {
-      throw new ApiError(400, "Failed to upload image");
+  // Check if at least one field is provided
+  if (!name && !email && !password && !employeeRole && !mobileNumber) {
+    throw new ApiError(400, "At least one field is required to update");
+  }
+
+  const existingEmployee = await Employee.findById(employeeId);
+
+  if (!existingEmployee) {
+    throw new ApiError(404, "Employee not found");
+  }
+
+  // If email or mobileNumber is being updated, check for conflicts
+  if (email || mobileNumber) {
+    const conflictingEmployee = await Employee.findOne({
+      $or: [{ email }, { mobileNumber }],
+      _id: { $ne: employeeId },
+    });
+
+    if (conflictingEmployee) {
+      throw new ApiError(
+        409,
+        "Another employee with the same email or mobile number already exists"
+      );
     }
-    imageUrl = image.url;
   }
 
-  const employee = await Employee.findByIdAndUpdate(
-    id,
-    {
-      $set: {
-        name,
-        email,
-        mobileNumber,
-        password,
-        employeeRole,
-        profilepic: imageUrl,
-      },
-    },
-    { new: true }
-  ).select();
+  // Update only the fields that are provided
+  if (name) existingEmployee.name = name;
+  if (email) existingEmployee.email = email;
+  if (password) existingEmployee.password = password;  // Ensure password is hashed if needed
+  if (mobileNumber) existingEmployee.mobileNumber = mobileNumber;
+  if (employeeRole) existingEmployee.employeeRole = employeeRole;
+
+  await existingEmployee.save();
+
+  const updatedEmployee = await Employee.findById(employeeId).select();
+
+  if (!updatedEmployee) {
+    throw new ApiError(500, "Something went wrong while updating the Employee");
+  }
 
   return res
-    .status(201)
-    .json(new ApiResponse(200, employee, "Employee Update Successfully"));
+    .status(200)
+    .json(
+      new ApiResponse(200, updatedEmployee, "Employee updated successfully")
+    );
 });
+
+
 
 const deleteEmployee = asyncHandler(async (req, res) => {
   const { id } = req.body;

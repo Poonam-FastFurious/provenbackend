@@ -346,59 +346,103 @@ const updateProduct = asyncHandler(async (req, res) => {
 const buildQuery = (params) => {
   const query = {};
 
-  if (params.title) {
-    query.title = { $regex: params.title, $options: "i" };
+  if (params.productTitle) {
+    query.productTitle = { $regex: params.productTitle, $options: 'i' }; // Case-insensitive regex
   }
   if (params.description) {
-    query.description = { $regex: params.description, $options: "i" };
+    query.description = { $regex: params.description, $options: 'i' };
   }
-  if (params.price) {
-    query.price = params.price;
+  if (params.oneTimePrice) {
+    query.oneTimePrice = params.oneTimePrice;
   }
-  if (params.stocks) {
-    query.stocks = params.stocks;
+  if (params.subscriptionPrice) {
+    query.subscriptionPrice = params.subscriptionPrice;
   }
-  if (params.discount) {
-    query.discount = params.discount;
+  if (params.category) {
+    query.category = params.category;
   }
-  if (params.cutPrice) {
-    query.cutPrice = params.cutPrice;
+  if (params.subCategory) {
+    query.subCategory = params.subCategory;
   }
-  if (params.categories) {
-    query.categories = params.categories;
+  if (params.discountPercentage) {
+    query.discountPercentage = params.discountPercentage;
   }
-  if (params.tags) {
-    query.tags = { $in: params.tags };
+  if (params.rating) {
+    query.rating = params.rating;
   }
-  if (params.sku) {
-    query.sku = params.sku;
+  if (params.stock) {
+    query.stock = params.stock;
   }
-  if (params.shortDescription) {
-    query.shortDescription = { $regex: params.shortDescription, $options: "i" };
+  if (params.status) {
+    query.status = params.status;
   }
-  if (params.youtubeVideoLink) {
-    query.youtubeVideoLink = { $regex: params.youtubeVideoLink, $options: "i" };
+  if (params.visibility) {
+    query.visibility = params.visibility;
   }
-  if (params.thumbnail) {
-    query.thumbnail = { $in: params.thumbnail };
+  if (params.productTags) {
+    query.productTags = { $in: params.productTags };
+  }
+  if (params.productShortDescription) {
+    query.productShortDescription = { $regex: params.productShortDescription, $options: 'i' };
+  }
+  if (params.IsApproved) {
+    query.IsApproved = params.IsApproved;
+  }
+  if (params.type) {
+    query.type = params.type;
+  }
+  if (params.itemType) {
+    query.itemType = params.itemType;
   }
 
   return query;
 };
 
 const searchProducts = asyncHandler(async (req, res) => {
-  const query = buildQuery(req.query);
+  try {
+    // Extract search term from query params
+    let searchParams = req.query.query;
 
-  const products = await Product.find(query);
+    if (!searchParams) {
+      searchParams = "";
+      //   return res.status(400).json(new ApiResponse(400, null, "Search params are required."));
+    }
 
-  if (products.length === 0) {
-    await SearchData.create({ searchParam: req.query });
-    throw new ApiError(404, "No products found matching the criteria.");
+    // Build a query to search across multiple fields
+    const query = {
+      $or: [
+        { productTitle: { $regex: searchParams, $options: 'i' } },
+        { description: { $regex: searchParams, $options: 'i' } },
+        { shortDescription: { $regex: searchParams, $options: 'i' } },
+        { categories: { $regex: searchParams, $options: 'i' } },
+        { brand: { $regex: searchParams, $options: 'i' } },
+        { productTags: { $regex: searchParams, $options: 'i' } },
+        { type: { $regex: searchParams, $options: 'i' } },
+        { itemType: { $regex: searchParams, $options: 'i' } },
+      ],
+    };
+
+    // Fetch products based on the query
+    const products = await Product.find(query);
+
+    if (products.length === 0) {
+      // Record the search parameters if no products found
+
+
+      // Throw a 404 error if no products are found
+      throw new ApiError(404, "No products found matching the criteria.");
+    }
+
+    // Return the found products
+    return res.json(new ApiResponse(200, products, "Products retrieved successfully"));
+
+  } catch (error) {
+    // Handle unexpected errors
+    return res.status(error.statusCode || 500).json({
+      status: 'error',
+      message: error.message || 'An unexpected error occurred',
+    });
   }
-
-  return res.json(
-    new ApiResponse(200, products, "Products retrieved successfully")
-  );
 });
 
 export {
