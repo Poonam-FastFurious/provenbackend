@@ -45,6 +45,7 @@ import wishlist from "./routes/Wishlist.routes.js";
 import useraddress from "./routes/Address.routes.js";
 import Inquiry from "./routes/Inquiry.routes.js";
 import review from "./routes/Review.routes.js";
+import search from "./routes/Search.routes.js";
 //routes declearetion
 
 app.use("/api/v1/admin", adminrouter);
@@ -74,4 +75,5 @@ app.use("/api/v1/wishlist", wishlist);
 app.use("/api/v1/address", useraddress);
 app.use("/api/v1/Inquiry", Inquiry);
 app.use("/api/v1/review", review);
+app.use("/api/v1/serach", search);
 export { app };
