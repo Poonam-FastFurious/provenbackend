@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-
 const productSchema = new mongoose.Schema(
   {
     title: {
@@ -71,6 +70,22 @@ const productSchema = new mongoose.Schema(
         trim: true,
       },
     ],
+    banners: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+    flipkarturl: {
+      type: String,
+      trim: true,
+      required: true,
+    },
+    amazonurl: {
+      type: String,
+      trim: true,
+      required: true,
+    },
   },
   { timestamps: true }
 );

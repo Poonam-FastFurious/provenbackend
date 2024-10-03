@@ -23,13 +23,23 @@ const addProduct = asyncHandler(async (req, res) => {
       shortDescription,
       stocks,
       youtubeVideoLink,
+      flipkarturl,
+      amazonurl,
+      
     } = req.body;
 
     // Validate required fields
     if (
-      ![title, description, price, stocks, sku, categories].every(
-        (field) => field && field.trim()
-      )
+      ![
+        title,
+        description,
+        price,
+        stocks,
+        sku,
+        categories,
+        flipkarturl,
+        amazonurl,
+      ].every((field) => field && field.trim())
     ) {
       throw new ApiError(400, "All required fields must be filled");
     }
@@ -77,7 +87,7 @@ const addProduct = asyncHandler(async (req, res) => {
     // Handle image and thumbnail upload
     const imageLocalPath = req.files?.image?.[0]?.path;
     const thumbnailFiles = req.files?.thumbnail;
-
+    const bannerFiles = req.files?.banners; // Handle banner files
     if (!imageLocalPath || !thumbnailFiles || thumbnailFiles.length === 0) {
       throw new ApiError(400, "Image and Thumbnail files are required");
     }
@@ -86,6 +96,11 @@ const addProduct = asyncHandler(async (req, res) => {
     const uploadedThumbnails = await Promise.all(
       thumbnailFiles.map((file) => uploadOnCloudinary(file.path))
     );
+    const uploadedBanners = bannerFiles
+      ? await Promise.all(
+          bannerFiles.map((file) => uploadOnCloudinary(file.path))
+        )
+      : [];
 
     if (!uploadedImage || !uploadedThumbnails.length) {
       throw new ApiError(400, "Failed to upload image or thumbnails");
@@ -109,6 +124,9 @@ const addProduct = asyncHandler(async (req, res) => {
       thumbnail: uploadedThumbnails.map((thumbnail) => thumbnail.url),
       stocks: parsedStocks,
       youtubeVideoLink,
+      amazonurl,
+      flipkarturl,
+      banners: uploadedBanners.map((banner) => banner.url),
     });
 
     // Return successful response
@@ -257,6 +275,8 @@ const updateProduct = asyncHandler(async (req, res) => {
       shortDescription,
       stocks,
       youtubeVideoLink,
+      amazonurl, // New field for Amazon URL
+      flipkarturl,
     } = req.body;
 
     // Check if product exists
@@ -286,7 +306,7 @@ const updateProduct = asyncHandler(async (req, res) => {
 
     // Handle image and thumbnail updates if files are provided
     if (req.files) {
-      const { image, thumbnail } = req.files;
+      const { image, thumbnail, banners } = req.files;
 
       if (image) {
         const uploadedImage = await uploadOnCloudinary(image[0].path);
@@ -307,6 +327,15 @@ const updateProduct = asyncHandler(async (req, res) => {
           (thumbnail) => thumbnail.url
         );
       }
+      if (banners) {
+        const uploadedBanners = await Promise.all(
+          banners.map((file) => uploadOnCloudinary(file.path))
+        );
+        if (!uploadedBanners.length) {
+          throw new ApiError(400, "Failed to upload banners");
+        }
+        product.banners = uploadedBanners.map((banner) => banner.url);
+      }
     }
 
     // Update product fields if they are provided
@@ -321,7 +350,8 @@ const updateProduct = asyncHandler(async (req, res) => {
     if (shortDescription) product.shortDescription = shortDescription;
     if (stocks) product.stocks = parseInt(stocks, 10);
     if (youtubeVideoLink) product.youtubeVideoLink = youtubeVideoLink;
-
+    if (amazonurl) product.amazonurl = amazonurl;
+    if (flipkarturl) product.flipkarturl = flipkarturl;
     await product.save();
 
     return res.status(200).json({
@@ -388,7 +418,6 @@ const buildQuery = (params) => {
 
   return query;
 };
-
 const searchProducts = asyncHandler(async (req, res) => {
   try {
     let searchParams = req.query.query;
@@ -438,7 +467,6 @@ const searchProducts = asyncHandler(async (req, res) => {
     });
   }
 });
-
 export {
   addProduct,
   getAllProducts,
