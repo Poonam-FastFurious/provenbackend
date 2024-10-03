@@ -4,6 +4,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import { SearchData } from "../models/Search.modal.js";
 const addProduct = asyncHandler(async (req, res) => {
   try {
     if (!req.body || !req.files) {
@@ -22,13 +23,23 @@ const addProduct = asyncHandler(async (req, res) => {
       shortDescription,
       stocks,
       youtubeVideoLink,
+      flipkarturl,
+      amazonurl,
+      
     } = req.body;
 
     // Validate required fields
     if (
-      ![title, description, price, stocks, sku, categories].every(
-        (field) => field && field.trim()
-      )
+      ![
+        title,
+        description,
+        price,
+        stocks,
+        sku,
+        categories,
+        flipkarturl,
+        amazonurl,
+      ].every((field) => field && field.trim())
     ) {
       throw new ApiError(400, "All required fields must be filled");
     }
@@ -44,11 +55,15 @@ const addProduct = asyncHandler(async (req, res) => {
     // Validate SKU format (example: SKU must be alphanumeric)
     const skuRegex = /^[A-Za-z0-9-]+$/;
     if (!skuRegex.test(sku)) {
-      throw new ApiError(400, "SKU must be alphanumeric and follow the required format");
+      throw new ApiError(
+        400,
+        "SKU must be alphanumeric and follow the required format"
+      );
     }
 
     // Validate YouTube video URL (basic validation)
-    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
+    const youtubeRegex =
+      /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
     if (youtubeVideoLink && !youtubeRegex.test(youtubeVideoLink)) {
       throw new ApiError(400, "Invalid YouTube video URL");
     }
@@ -72,7 +87,7 @@ const addProduct = asyncHandler(async (req, res) => {
     // Handle image and thumbnail upload
     const imageLocalPath = req.files?.image?.[0]?.path;
     const thumbnailFiles = req.files?.thumbnail;
-
+    const bannerFiles = req.files?.banners; // Handle banner files
     if (!imageLocalPath || !thumbnailFiles || thumbnailFiles.length === 0) {
       throw new ApiError(400, "Image and Thumbnail files are required");
     }
@@ -81,6 +96,11 @@ const addProduct = asyncHandler(async (req, res) => {
     const uploadedThumbnails = await Promise.all(
       thumbnailFiles.map((file) => uploadOnCloudinary(file.path))
     );
+    const uploadedBanners = bannerFiles
+      ? await Promise.all(
+          bannerFiles.map((file) => uploadOnCloudinary(file.path))
+        )
+      : [];
 
     if (!uploadedImage || !uploadedThumbnails.length) {
       throw new ApiError(400, "Failed to upload image or thumbnails");
@@ -104,6 +124,9 @@ const addProduct = asyncHandler(async (req, res) => {
       thumbnail: uploadedThumbnails.map((thumbnail) => thumbnail.url),
       stocks: parsedStocks,
       youtubeVideoLink,
+      amazonurl,
+      flipkarturl,
+      banners: uploadedBanners.map((banner) => banner.url),
     });
 
     // Return successful response
@@ -128,8 +151,6 @@ const addProduct = asyncHandler(async (req, res) => {
     });
   }
 });
-
-
 
 const getAllProducts = asyncHandler(async (req, res) => {
   try {
@@ -162,7 +183,6 @@ const getAllProducts = asyncHandler(async (req, res) => {
     });
   }
 });
-
 
 const deleteProduct = asyncHandler(async (req, res) => {
   try {
@@ -255,6 +275,8 @@ const updateProduct = asyncHandler(async (req, res) => {
       shortDescription,
       stocks,
       youtubeVideoLink,
+      amazonurl, // New field for Amazon URL
+      flipkarturl,
     } = req.body;
 
     // Check if product exists
@@ -284,7 +306,7 @@ const updateProduct = asyncHandler(async (req, res) => {
 
     // Handle image and thumbnail updates if files are provided
     if (req.files) {
-      const { image, thumbnail } = req.files;
+      const { image, thumbnail, banners } = req.files;
 
       if (image) {
         const uploadedImage = await uploadOnCloudinary(image[0].path);
@@ -305,6 +327,15 @@ const updateProduct = asyncHandler(async (req, res) => {
           (thumbnail) => thumbnail.url
         );
       }
+      if (banners) {
+        const uploadedBanners = await Promise.all(
+          banners.map((file) => uploadOnCloudinary(file.path))
+        );
+        if (!uploadedBanners.length) {
+          throw new ApiError(400, "Failed to upload banners");
+        }
+        product.banners = uploadedBanners.map((banner) => banner.url);
+      }
     }
 
     // Update product fields if they are provided
@@ -319,7 +350,8 @@ const updateProduct = asyncHandler(async (req, res) => {
     if (shortDescription) product.shortDescription = shortDescription;
     if (stocks) product.stocks = parseInt(stocks, 10);
     if (youtubeVideoLink) product.youtubeVideoLink = youtubeVideoLink;
-
+    if (amazonurl) product.amazonurl = amazonurl;
+    if (flipkarturl) product.flipkarturl = flipkarturl;
     await product.save();
 
     return res.status(200).json({
@@ -346,105 +378,95 @@ const updateProduct = asyncHandler(async (req, res) => {
 const buildQuery = (params) => {
   const query = {};
 
-  if (params.productTitle) {
-    query.productTitle = { $regex: params.productTitle, $options: 'i' }; // Case-insensitive regex
+  if (params.title) {
+    query.title = { $regex: params.title, $options: "i" }; // Case-insensitive regex
   }
   if (params.description) {
-    query.description = { $regex: params.description, $options: 'i' };
+    query.description = { $regex: params.description, $options: "i" };
   }
-  if (params.oneTimePrice) {
-    query.oneTimePrice = params.oneTimePrice;
+  if (params.price) {
+    query.price = params.price;
   }
-  if (params.subscriptionPrice) {
-    query.subscriptionPrice = params.subscriptionPrice;
+  if (params.cutPrice) {
+    query.cutPrice = params.cutPrice;
   }
-  if (params.category) {
-    query.category = params.category;
+  if (params.categories) {
+    query.categories = params.categories;
   }
-  if (params.subCategory) {
-    query.subCategory = params.subCategory;
+  if (params.tags) {
+    query.tags = params.tags;
   }
-  if (params.discountPercentage) {
-    query.discountPercentage = params.discountPercentage;
+  if (params.discount) {
+    query.discount = params.discount;
   }
   if (params.rating) {
     query.rating = params.rating;
   }
-  if (params.stock) {
-    query.stock = params.stock;
+  if (params.stocks) {
+    query.stocks = Number(params.stocks);
   }
-  if (params.status) {
-    query.status = params.status;
+
+  if (params.tags) {
+    query.tags = params.tags;
   }
-  if (params.visibility) {
-    query.visibility = params.visibility;
+  if (params.sku) {
+    query.sku = params.sku;
   }
-  if (params.productTags) {
-    query.productTags = { $in: params.productTags };
-  }
-  if (params.productShortDescription) {
-    query.productShortDescription = { $regex: params.productShortDescription, $options: 'i' };
-  }
-  if (params.IsApproved) {
-    query.IsApproved = params.IsApproved;
-  }
-  if (params.type) {
-    query.type = params.type;
-  }
-  if (params.itemType) {
-    query.itemType = params.itemType;
+  if (params.shortDescription) {
+    query.shortDescription = { $in: params.shortDescription };
   }
 
   return query;
 };
-
 const searchProducts = asyncHandler(async (req, res) => {
   try {
-    // Extract search term from query params
     let searchParams = req.query.query;
 
     if (!searchParams) {
-      searchParams = "";
-      //   return res.status(400).json(new ApiResponse(400, null, "Search params are required."));
+      return res
+        .status(400)
+        .json(new ApiResponse(400, null, "Search params are required."));
     }
 
-    // Build a query to search across multiple fields
+    const searchTerms = searchParams.split(" ");
+
     const query = {
-      $or: [
-        { productTitle: { $regex: searchParams, $options: 'i' } },
-        { description: { $regex: searchParams, $options: 'i' } },
-        { shortDescription: { $regex: searchParams, $options: 'i' } },
-        { categories: { $regex: searchParams, $options: 'i' } },
-        { brand: { $regex: searchParams, $options: 'i' } },
-        { productTags: { $regex: searchParams, $options: 'i' } },
-        { type: { $regex: searchParams, $options: 'i' } },
-        { itemType: { $regex: searchParams, $options: 'i' } },
-      ],
+      $and: searchTerms.map((term) => ({
+        $or: [
+          { title: { $regex: term, $options: "i" } },
+          { description: { $regex: term, $options: "i" } },
+          { shortDescription: { $regex: term, $options: "i" } },
+          { categories: { $regex: term, $options: "i" } },
+          { stocks: !isNaN(term) ? Number(term) : null },
+          { brand: { $regex: term, $options: "i" } },
+          { productTags: { $regex: term, $options: "i" } },
+          { type: { $regex: term, $options: "i" } },
+          { itemType: { $regex: term, $options: "i" } },
+          { tags: { $regex: term, $options: "i" } },
+        ],
+      })),
     };
 
-    // Fetch products based on the query
     const products = await Product.find(query);
 
     if (products.length === 0) {
-      // Record the search parameters if no products found
-
-
+      await SearchData.create({ searchParam: searchParams });
       // Throw a 404 error if no products are found
       throw new ApiError(404, "No products found matching the criteria.");
     }
 
     // Return the found products
-    return res.json(new ApiResponse(200, products, "Products retrieved successfully"));
-
+    return res.json(
+      new ApiResponse(200, products, "Products retrieved successfully")
+    );
   } catch (error) {
     // Handle unexpected errors
     return res.status(error.statusCode || 500).json({
-      status: 'error',
-      message: error.message || 'An unexpected error occurred',
+      status: "error",
+      message: error.message || "An unexpected error occurred",
     });
   }
 });
-
 export {
   addProduct,
   getAllProducts,
