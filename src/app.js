@@ -46,6 +46,7 @@ import useraddress from "./routes/Address.routes.js";
 import Inquiry from "./routes/Inquiry.routes.js";
 import review from "./routes/Review.routes.js";
 import search from "./routes/Search.routes.js";
+import Storelocation from "./routes/StoreLocation.routes.js";
 //routes declearetion
 
 app.use("/api/v1/admin", adminrouter);
@@ -76,4 +77,5 @@ app.use("/api/v1/address", useraddress);
 app.use("/api/v1/Inquiry", Inquiry);
 app.use("/api/v1/review", review);
 app.use("/api/v1/serach", search);
+app.use("/api/v1/Storelocation", Storelocation);
 export { app };
