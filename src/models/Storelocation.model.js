@@ -8,6 +8,7 @@ const StorelocationSchema = new mongoose.Schema({
         {
           name: { type: String, required: true },
           phone: { type: String, required: true },
+          alternatePhone: { type: String },
           address: { type: String, required: true },
         },
       ],

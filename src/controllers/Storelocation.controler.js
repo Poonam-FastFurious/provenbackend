@@ -5,7 +5,7 @@ import { StoreLocation } from "../models/Storelocation.model.js";
 // Create a new location (state, city, and address)
 const createLocation = asyncHandler(async (req, res) => {
   // Get location details from the frontend
-  const { state, cityName, Name, phone, addressDetails } = req.body;
+  const { state, cityName, Name, phone,alternatePhone, addressDetails } = req.body;
 
   // Validation - Check if required fields are not empty
   if ([state, cityName, Name, phone, addressDetails].some((field) => !field)) {
@@ -19,7 +19,9 @@ const createLocation = asyncHandler(async (req, res) => {
   if (phone.length !== 10) {
     throw new ApiError(400, "Phone number must be 10 digits.");
   }
-
+  if (alternatePhone && alternatePhone.length !== 10) {
+    throw new ApiError(400, "Alternate phone number must be 10 digits.");
+  }
   // Check if the state exists, if not, create a new state with the city and address
   let location = await StoreLocation.findOne({ state });
 
@@ -33,6 +35,7 @@ const createLocation = asyncHandler(async (req, res) => {
             {
               name: Name,
               phone,
+              alternatePhone,
               address: addressDetails,
             },
           ],
@@ -51,6 +54,7 @@ const createLocation = asyncHandler(async (req, res) => {
           {
             name: Name,
             phone,
+            alternatePhone,
             address: addressDetails,
           },
         ],
@@ -60,6 +64,7 @@ const createLocation = asyncHandler(async (req, res) => {
       city.addresses.push({
         name: Name,
         phone,
+        alternatePhone,
         address: addressDetails,
       });
     }
@@ -92,4 +97,28 @@ const getAllLocations = asyncHandler(async (req, res) => {
     message: "Locations retrieved successfully",
   });
 });
-export { createLocation, getAllLocations };
+const deleteLocation = asyncHandler(async (req, res) => {
+  const { id } = req.body; // Get the ID from request parameters
+
+  // Validate the ID
+  if (!id) {
+    throw new ApiError(400, "Location ID is required.");
+  }
+
+  // Find the location by ID
+  const location = await StoreLocation.findById(id);
+
+  if (!location) {
+    throw new ApiError(404, "Location not found.");
+  }
+
+  // Delete the location
+  await StoreLocation.findByIdAndDelete(id);
+
+  return res.status(200).json({
+    success: true,
+    message: "Location deleted successfully.",
+  });
+});
+
+export { createLocation, getAllLocations ,deleteLocation};
