@@ -5,7 +5,8 @@ import { StoreLocation } from "../models/Storelocation.model.js";
 // Create a new location (state, city, and address)
 const createLocation = asyncHandler(async (req, res) => {
   // Get location details from the frontend
-  const { state, cityName, Name, phone,alternatePhone, addressDetails } = req.body;
+  const { state, cityName, Name, phone, alternatePhone, addressDetails } =
+    req.body;
 
   // Validation - Check if required fields are not empty
   if ([state, cityName, Name, phone, addressDetails].some((field) => !field)) {
@@ -83,6 +84,51 @@ const createLocation = asyncHandler(async (req, res) => {
     message: "Location created successfully",
   });
 });
+
+const deleteLocation = asyncHandler(async (req, res) => {
+  const { state, cityName, address } = req.body; // Get state, city name, and address details from request
+
+  // Validate the required fields
+  if (!state || !cityName || !address) {
+    throw new ApiError(400, "State, cityName, and address are required.");
+  }
+
+  // Find the location by state
+  const location = await StoreLocation.findOne({ state });
+
+  if (!location) {
+    throw new ApiError(404, "Location not found.");
+  }
+
+  // Find the city within the location
+  const city = location.cities.find((city) => city.name === cityName);
+  if (!city) {
+    throw new ApiError(404, "City not found.");
+  }
+
+  // Find the index of the address to delete
+  const addressIndex = city.addresses.findIndex(
+    (addr) => addr.address === address
+  );
+
+  // Check if the address exists
+  if (addressIndex === -1) {
+    throw new ApiError(404, "Address not found.");
+  }
+
+  // Remove the address from the city's addresses
+  city.addresses.splice(addressIndex, 1);
+
+  // Save the updated location
+  const updatedLocation = await location.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "Address deleted successfully.",
+    data: updatedLocation,
+  });
+});
+
 const getAllLocations = asyncHandler(async (req, res) => {
   // Fetch all store locations from the database
   const locations = await StoreLocation.find();
@@ -97,28 +143,4 @@ const getAllLocations = asyncHandler(async (req, res) => {
     message: "Locations retrieved successfully",
   });
 });
-const deleteLocation = asyncHandler(async (req, res) => {
-  const { id } = req.body; // Get the ID from request parameters
-
-  // Validate the ID
-  if (!id) {
-    throw new ApiError(400, "Location ID is required.");
-  }
-
-  // Find the location by ID
-  const location = await StoreLocation.findById(id);
-
-  if (!location) {
-    throw new ApiError(404, "Location not found.");
-  }
-
-  // Delete the location
-  await StoreLocation.findByIdAndDelete(id);
-
-  return res.status(200).json({
-    success: true,
-    message: "Location deleted successfully.",
-  });
-});
-
-export { createLocation, getAllLocations ,deleteLocation};
+export { createLocation, getAllLocations, deleteLocation };
