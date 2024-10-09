@@ -15,7 +15,6 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
     },
     avatar: {
       type: String,
@@ -34,6 +33,8 @@ const userSchema = new mongoose.Schema(
     },
     mobile: {
       type: Number,
+      required: true,
+      unique: true,
     },
     dob: {
       type: Date,
@@ -48,6 +49,7 @@ const userSchema = new mongoose.Schema(
     },
     otp: { type: String },
     otpExpires: { type: Date },
+    isVerified: { type: Boolean, default: false },
   },
   {
     timestamps: true,

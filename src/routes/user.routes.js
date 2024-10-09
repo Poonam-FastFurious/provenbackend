@@ -14,6 +14,7 @@ import {
   resetPassword,
   requestOTP,
   verifyOTPAndLogin,
+  verifyOTP,
 } from "../controllers/User.controler.js";
 
 import { verifyJWT } from "../middlewares/auth.middlwares.js";
@@ -45,6 +46,7 @@ router.route("/update-account").patch(verifyJWT, updateAccountDetails);
 router.route("/getuser").get(getUserProfile);
 router.route("/sendsms").post(requestOTP);
 router.route("/loginwithotp").post(verifyOTPAndLogin);
+router.route("/verifyaccount").post(verifyOTP);
 
 router
   .route("/avatar")

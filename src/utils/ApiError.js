@@ -19,13 +19,15 @@ class ApiError extends Error {
     }
   }
 
-  static handleError(err, res) {
+  static handleError(err, req, res, next) {
     const { statusCode, message, errors } = err;
+    
+    // Ensure it's returning JSON format, not HTML
     res.status(statusCode).json({
       success: false,
       statusCode,
       message,
-      errors,
+      errors, // You can customize this as per your needs
     });
   }
 }

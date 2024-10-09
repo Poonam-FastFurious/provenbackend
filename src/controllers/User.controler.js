@@ -28,52 +28,102 @@ const generateAccessAndRefereshTokens = async (userId) => {
     );
   }
 };
-const registerUser = asyncHandler(async (req, res) => {
-  const { fullName, email, password, mobile } = req.body;
+const generateOTP = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
 
-  // Validate that all required fields are provided
-  if (
-    [email, fullName, password, mobile].some((field) => field?.trim() === "")
-  ) {
-    throw new ApiError(400, "All fields are required");
+const sendSMS = async (mobile, otp) => {
+  const apiUrl = `http://msg.venetsmedia.com/api/pushsms?user=proven01&authkey=92c24oHkJe8A&sender=PROVRO&mobile=${mobile}&text=Your+OTP+to+login+into+Proven+App+is+${otp}+PROVRO.&rpt=1&summary=1&output=json&entityid=1201161080253395052&templateid=1207172286223241222`;
+  try {
+    const response = await axios.get(apiUrl);
+    return response.data;
+  } catch (error) {
+    console.error("Error sending SMS:", error);
+    throw new ApiError(500, "Something went wrong while sending SMS");
+  }
+};
+const registerUser = asyncHandler(async (req, res, next) => {
+  const { fullName, email, mobile } = req.body;
+
+  // Validate required fields
+  if ([email, fullName, mobile].some((field) => field?.trim() === "")) {
+    return next(new ApiError(400, "All fields are required"));
   }
 
   // Check if a user with the provided email already exists
-  const existedUser = await User.findOne({ email });
+   // Check if a user with the provided email already exists
+   const existingUserByEmail = await User.findOne({ email });
+   if (existingUserByEmail) {
+     return res.status(409).json({
+       success: false,
+       message: "User with this email already exists",
+     });
+   }
 
-  // Debugging information
-  console.log("Checking for existing user with email:", email);
-  console.log("Existed User:", existedUser);
+   // Check if a user with the provided mobile number already exists
+   const existingUserByMobile = await User.findOne({ mobile });
+   if (existingUserByMobile) {
+     return res.status(409).json({
+       success: false,
+       message: "User with this mobile number already exists",
+     });
+   }
 
-  if (existedUser) {
-    throw new ApiError(409, "User with email already exists");
-  }
+  // Create OTP and set expiration time
+  const otp = generateOTP();
 
-  // Optional: Validate mobile number format if needed
-  if (isNaN(mobile) || mobile <= 0) {
-    throw new ApiError(400, "Invalid mobile number");
-  }
-
-  // Create a new user
+  // Create a new user with OTP, but not verified yet
   const user = await User.create({
     fullName,
     email,
-    password,
-    mobile, // Include mobile number
+    mobile,
+    otp,
+    otpExpires: new Date(Date.now() + 10 * 60 * 1000), // OTP valid for 10 minutes
+    isVerified: false, // Mark as unverified
   });
 
-  // Find the newly created user without sensitive information
-  const createdUser = await User.findById(user._id).select(
-    "-password -refreshToken"
-  );
+  // Send OTP via SMS
+  await sendSMS(mobile, otp);
 
-  if (!createdUser) {
-    throw new ApiError(500, "Something went wrong while registering the user");
+  // Inform user that OTP has been sent, but do not log them in yet
+  return res.status(201).json({
+    success: true,
+    message: "OTP sent to your mobile. Please verify to complete registration.",
+    data: null,
+  });
+});
+
+const verifyOTP = asyncHandler(async (req, res) => {
+  const { mobile, otp } = req.body;
+
+  // Check if mobile and OTP are provided
+  if (!mobile || !otp) {
+    throw new ApiError(400, "Mobile number and OTP are required");
+  }
+  console.log("Mobile:", mobile);
+  console.log("OTP:", otp);
+
+  // Find the user by mobile number
+  const user = await User.findOne({ mobile });
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
   }
 
+  // Check if the OTP is correct and not expired
+  if (user.otp !== otp || user.otpExpires < Date.now()) {
+    throw new ApiError(400, "Invalid or expired OTP");
+  }
+
+  // Mark the user as verified
+  user.isVerified = true;
+  user.otp = undefined; // Clear the OTP once verified
+  user.otpExpires = undefined;
+  await user.save();
+
   return res
-    .status(201)
-    .json(new ApiResponse(200, createdUser, "User registered successfully"));
+    .status(200)
+    .json(new ApiResponse(200, null, "Your Account verified successfully"));
 });
 
 const loginUser = asyncHandler(async (req, res) => {
@@ -394,20 +444,6 @@ const resetPassword = async (req, res) => {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
-const generateOTP = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-};
-
-const sendSMS = async (mobile, otp) => {
-  const apiUrl = `http://msg.venetsmedia.com/api/pushsms?user=proven01&authkey=92c24oHkJe8A&sender=PROVRO&mobile=${mobile}&text=Your+OTP+to+login+into+Proven+App+is+${otp}+PROVRO.&rpt=1&summary=1&output=json&entityid=1201161080253395052&templateid=1207172286223241222`;
-  try {
-    const response = await axios.get(apiUrl);
-    return response.data;
-  } catch (error) {
-    console.error("Error sending SMS:", error);
-    throw new ApiError(500, "Something went wrong while sending SMS");
-  }
-};
 
 const requestOTP = async (req, res) => {
   try {
@@ -420,7 +456,10 @@ const requestOTP = async (req, res) => {
     const user = await User.findOne({ mobile });
 
     if (!user) {
-      throw new ApiError(404, "Your mobile number does not exist. Please sign up");
+      throw new ApiError(
+        404,
+        "Your mobile number does not exist. Please sign up"
+      );
     }
 
     const otp = generateOTP();
@@ -430,20 +469,25 @@ const requestOTP = async (req, res) => {
 
     await sendSMS(user.mobile, otp);
 
-    return res.status(200).json(new ApiResponse(200, null, "OTP sent to your mobile"));
+    return res
+      .status(200)
+      .json(new ApiResponse(200, null, "OTP sent to your mobile"));
   } catch (error) {
     console.error("Error during OTP request:", error);
 
     // Handle specific errors
     if (error instanceof ApiError) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
+      return res
+        .status(error.statusCode)
+        .json({ success: false, message: error.message });
     }
 
     // Handle other unexpected errors
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
   }
 };
-
 
 const verifyOTPAndLogin = asyncHandler(async (req, res) => {
   const generateAccessAndRefereshTokens = async (userId) => {
@@ -475,27 +519,33 @@ const verifyOTPAndLogin = asyncHandler(async (req, res) => {
     const user = await User.findOne({ mobile });
 
     if (!user) {
-      throw new ApiError(404, "Your mobile number does not exist. Please sign up");
+      throw new ApiError(
+        404,
+        "Your mobile number does not exist. Please sign up"
+      );
     }
 
     const currentTime = Date.now();
     if (user.otp !== otp || user.otpExpires < currentTime) {
       throw new ApiError(401, "Invalid or expired OTP");
     }
-
+    user.isVerified = true;
     user.otp = undefined;
     user.otpExpires = undefined;
     await user.save();
 
-    const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(user._id);
+    const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(
+      user._id
+    );
 
     // Set options for cookies if needed
     const options = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // Ensure secure cookies in production
+      secure: process.env.NODE_ENV === "production", // Ensure secure cookies in production
     };
 
-    res.status(200)
+    res
+      .status(200)
       .cookie("accessToken", accessToken, options)
       .cookie("refreshToken", refreshToken, options)
       .json(
@@ -541,4 +591,5 @@ export {
   resetPassword,
   requestOTP,
   verifyOTPAndLogin,
+  verifyOTP,
 };
