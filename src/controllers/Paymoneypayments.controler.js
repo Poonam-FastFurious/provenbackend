@@ -1,135 +1,117 @@
-// import axios from "axios";
-// import crypto from "crypto";
-// import { Order } from "../models/Order.model.js";
-// import { Payment } from "../models/Payments.model.js";
-// import { asyncHandler } from "../utils/asyncHandler.js";
-// import mongoose from "mongoose";
-// const payUConfig = {
-//   key: "your_payu_key",
-//   salt: "your_payu_salt",
-// };
+import { log } from "console";
+import crypto from "crypto";
+import { PayuPayment } from "../models/PayumponeyPayments.model.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
-// // Function to create a payment order
-// export const createPayment = async (req, res) => {
-//   const {
-//     orderId,
-//     amount,
-//     currency,
-//     paymentMethod,
-//     userId,
-//     firstName,
-//     email,
-//     phone,
-//   } = req.body;
+export const initiatePayment = async (req, res) => {
+  try {
+    const { txnid, amount, productinfo, firstname, email, userId } = req.body;
 
-//   try {
-//     const order = await Order.findById(orderId);
-//     if (!order) {
-//       return res.status(404).json({ error: "Order not found" });
-//     }
+    // Debugging - Log request body to ensure all fields are present
+    console.log("Request body:", req.body);
 
-//     const txnid = `PAY-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-//     const productinfo = "Order Payment";
+    if (!userId) {
+      return res.status(400).json({ error: "User ID is required" });
+    }
 
-//     const hashString = `${payUConfig.key}|${txnid}|${amount}|${productinfo}|${firstName}|${email}|||||||||||${payUConfig.salt}`;
-//     const hash = crypto.createHash("sha512").update(hashString).digest("hex");
+    const key = process.env.PAYU_KEY; // Your PayUMoney key
+    const salt = process.env.PAYU_SALT; // Your PayUMoney salt
 
-//     const paymentData = {
-//       key: payUConfig.key,
-//       txnid,
-//       amount,
-//       productinfo,
-//       firstname: firstName,
-//       email,
-//       phone,
-//       surl: "https://your-success-url.com",
-//       furl: "https://your-failure-url.com",
-//       hash,
-//     };
+    const udf1 = "";
+    const udf2 = "";
+    const udf3 = "";
+    const udf4 = "";
+    const udf5 = "";
 
-//     console.log("Payment Data:", paymentData);
+    // Construct the string to hash
+    const hashString = `${key}|${txnid}|${amount}|${productinfo}|${firstname}|${email}|${udf1}|${udf2}|${udf3}|${udf4}|${udf5}||||||${salt}`;
 
-//     const response = await axios.post(
-//       "https://test.payu.in/_payment",
-//       paymentData
-//     );
+    // Generate the SHA-512 hash
+    const hash = crypto.createHash("sha512").update(hashString).digest("hex");
 
-//     console.log("PayU Response:", response.data);
+    // Step 2: Create and save the payment in the Payment model
+    const newPayment = new PayuPayment({
+      user: userId, // Ensure userId is passed correctly
+      paymentID: txnid, // Use txnid as paymentID
+      order: txnid, // Add order field
+      payuMoneyOrderId: txnid, // PayUMoney Order ID
+      amount,
+      currency: "INR",
+      status: "created", // Initial payment status
+      paymentMethod: "Credit Card",
+    });
 
-//     res.status(201).json({
-//       paymentData: paymentData,
-//       actionUrl: response.data.actionUrl,
-//     });
-//   } catch (error) {
-//     console.error("Payment creation failed:", error);
-//     res.status(500).json({ error: error.message });
-//   }
-// };
+    await newPayment.save();
 
-// export const verifyPayment = async (req, res) => {
-//   const { txnid, status, hash } = req.body;
+    // Step 3: Send the hash and other details to the client
+    res.json({
+      hash,
+      key,
+      txnid,
+      amount,
+      productinfo,
+      firstname,
+      email,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to initiate payment" });
+  }
+};
 
-//   try {
-//     const payment = await Payment.findOne({ paymentID: txnid });
-//     if (!payment) {
-//       return res.status(404).json({ error: "Payment not found" });
-//     }
+export const successpage = (req, res) => {
+  const { txnid, amount, productinfo, firstname, email, status, hash } =
+    req.body; // Extract relevant fields from the request body
 
-//     const hashString = `${payUConfig.salt}|${status}|||||||||||${req.body.email}|${req.body.firstname}|Order Payment|${req.body.amount}|${txnid}|${payUConfig.key}`;
-//     const expectedHash = crypto
-//       .createHash("sha512")
-//       .update(hashString)
-//       .digest("hex");
+  const key = process.env.PAYU_KEY; // Your PayU key
+  const salt = process.env.PAYU_SALT; // Your PayU salt
 
-//     if (expectedHash === hash) {
-//       payment.status = status === "success" ? "paid" : "failed";
-//       await payment.save();
+  const udf1 = "";
+  const udf2 = "";
+  const udf3 = "";
+  const udf4 = "";
+  const udf5 = "";
 
-//       return res
-//         .status(200)
-//         .json({ status: "Payment verified successfully", payment });
-//     } else {
-//       return res.status(400).json({ status: "Invalid hash", payment: null });
-//     }
-//   } catch (error) {
-//     return res.status(500).json({ error: error.message });
-//   }
-// };
+  // Construct the hash string to verify
+  const hashString = `${salt}|${status}||||||${udf5}|${udf4}|${udf3}|${udf2}|${udf1}|${email}|${firstname}|${productinfo}|${amount}|${txnid}|${key}`;
 
-// export const getPaymentDetails = async (req, res) => {
-//   const { paymentId } = req.params;
+  // Generate the hash based on the response
+  const generatedHash = crypto
+    .createHash("sha512")
+    .update(hashString)
+    .digest("hex");
 
-//   try {
-//     const payment = await Payment.findOne({ paymentID: paymentId }).populate(
-//       "order"
-//     );
-//     if (!payment) {
-//       return res.status(404).json({ error: "Payment not found" });
-//     }
+  // Compare the generated hash with the hash received from PayU
+  if (generatedHash === hash && status === "success") {
+    // Hashes match and payment status is successful, redirect to success page
+    res.redirect(`http://localhost:5173/success/${txnid}`);
+  } else {
+    // Hashes don't match or payment failed, redirect to error page
+    res.redirect(`http://localhost:5173/error`);
+  }
+};
 
-//     res.status(200).json({ payment });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// };
+export const failedpage = (req, res) => {
+  res.redirect(`http://localhost:5173/error`);
+};
 
-// export const getAllPayments = asyncHandler(async (req, res) => {
-//   const payments = await Payment.find()
-//     .populate("order")
-//     .populate("user", "fullName email");
-//   return res.json({
-//     success: true,
-//     data: payments,
-//     message: "All payments retrieved successfully",
-//   });
-// });
+export const getAllpayuPayments = async (req, res) => {
+  try {
+    // Step 1: Fetch all payments from the database
+    const payments = await PayuPayment.find();
 
-// export const paymentSuccess = async (req, res) => {
-//   // Implement logic to handle payment success
-//   res.send("Payment successful");
-// };
+    // Step 2: Check if payments were found
+    if (!payments.length) {
+      return res.status(404).json({ message: "No payments found" });
+    }
 
-// export const paymentFailure = async (req, res) => {
-//   // Implement logic to handle payment failure
-//   res.send("Payment failed");
-// };
+    // Step 3: Return the list of payments to the client
+    res.json({
+      success: true,
+      data: payments,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to retrieve payments" });
+  }
+};
